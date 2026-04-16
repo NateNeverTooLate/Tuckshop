@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tuckshop Inventory</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    input[type="number"] { width: 80px; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="max-w-6xl mx-auto p-6">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">Tuckshop Inventory</h1>
+      <div class="flex gap-4">
+        <button onclick="refreshData()" 
+                class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">Refresh</button>
+        <button onclick="startAlgorithm()" 
+                class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-lg font-semibold">
+          🚀 Start Algorithm
+        </button>
+        <button onclick="undoLastAction()" id="undoBtn"
+                class="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 hidden">
+          ↩️ Undo Last Action
+        </button>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow overflow-hidden">
+      <table class="w-full">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="px-6 py-4 text-left">Product</th>
+            <th class="px-6 py-4 text-right">Stock</th>
+            <th class="px-6 py-4 text-right">Price</th>
+            <th class="px-6 py-4 text-right">Sold Today</th>
+            <th class="px-6 py-4 text-right">Money Made Today</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody" class="divide-y"></tbody>
+      </table>
+    </div>
+
+    <div id="totalRow" class="mt-6 text-right text-xl font-semibold text-gray-700"></div>
+  </div>
+
+  <script>
+    // ==================== CONFIG ====================
+    const OWNER = "YOUR_GITHUB_USERNAME";           // ← CHANGE
+    const REPO = "tuckshop-inventory";              // ← CHANGE if different
+    const BRANCH = "main";                          // usually "main"
+    const FILE_PATH = "data.json";
+    const TOKEN = "YOUR_GITHUB_TOKEN_HERE";         // ← PASTE YOUR TOKEN HERE
+    // ===============================================
+
+    let data = [];
+    let undoData = null;
+
+    async function getSha() {
+      const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`, {
+        headers: { Authorization: `token ${TOKEN}` }
+      });
+      const json = await res.json();
+      return json.sha;
+    }
+
+    async function loadData() {
+      const url = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${FILE_PATH}`;
+      const res = await fetch(url);
+      data = await res.json();
+      renderTable();
+    }
+
+    async function saveData() {
+      const sha = await getSha();
+      const content = btoa(JSON.stringify(data, null, 2));
+
+      await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `token ${TOKEN}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: "Update tuckshop data",
+          content: content,
+          sha: sha,
+          branch: BRANCH
+        })
+      });
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("tableBody");
+      tbody.innerHTML = "";
+
+      let totalMoney = 0;
+
+      data.forEach(item => {
+        totalMoney += item.moneyMadeToday || 0;
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td class="px-6 py-4 font-medium">${item.product}</td>
+          <td class="px-6 py-4 text-right font-mono">${item.stock}</td>
+          <td class="px-6 py-4 text-right font-mono">$${item.sellPrice}</td>
+          <td class="px-6 py-4 text-right">
+            <input type="number" min="0" value="${item.soldToday}" 
+                   class="text-right border rounded-lg px-3 py-1 text-lg"
+                   onchange="updateSoldToday(${item.id}, this.value)">
+          </td>
+          <td class="px-6 py-4 text-right font-mono text-green-600">$${item.moneyMadeToday || 0}</td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      document.getElementById("totalRow").innerHTML = `
+        <span class="text-gray-500">Total money made today: </span>
+        <span class="text-3xl font-bold text-green-600">$${totalMoney}</span>
+      `;
+    }
+
+    window.updateSoldToday = async (id, value) => {
+      const item = data.find(i => i.id === id);
+      if (item) {
+        item.soldToday = parseFloat(value) || 0;
+        renderTable();
+        await saveData();           // auto-save on every change
+      }
+    };
+
+    window.startAlgorithm = async () => {
+      if (!confirm("Process all sales now?\n\nThis will subtract Sold Today from Stock and calculate money made.\nUndo is available immediately after.")) return;
+
+      // Save current state for undo
+      undoData = JSON.parse(JSON.stringify(data));
+      document.getElementById("undoBtn").classList.remove("hidden");
+
+      data.forEach(item => {
+        const sold = item.soldToday || 0;
+        if (sold > 0) {
+          item.stock = Math.max(0, item.stock - sold);
+          item.moneyMadeToday = item.sellPrice * sold;
+          item.soldToday = 0;                    // reset for next day
+        }
+      });
+
+      renderTable();
+      await saveData();
+      alert("✅ Sales processed and stock updated!");
+    };
+
+    window.undoLastAction = async () => {
+      if (!undoData) return;
+      if (!confirm("Undo the last algorithm run?")) return;
+
+      data = JSON.parse(JSON.stringify(undoData));
+      undoData = null;
+      document.getElementById("undoBtn").classList.add("hidden");
+
+      renderTable();
+      await saveData();
+      alert("✅ Last action undone");
+    };
+
+    window.refreshData = () => {
+      loadData();
+    };
+
+    // Initial load
+    loadData();
+  </script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+[
+  {
+    "id": 1,
+    "product": "Switch",
+    "stock": 14,
+    "sellPrice": 15,
+    "soldToday": 0,
+    "moneyMadeToday": 0
+  },
+  {
+    "id": 2,
+    "product": "Dragon",
+    "stock": 3,
+    "sellPrice": 15,
+    "soldToday": 0,
+    "moneyMadeToday": 0
+  },
+  {
+    "id": 3,
+    "product": "Kingsley",
+    "stock": 20,
+    "sellPrice": 10,
+    "soldToday": 0,
+    "moneyMadeToday": 0
+  },
+  {
+    "id": 4,
+    "product": "Cheetos",
+    "stock": 6,
+    "sellPrice": 8,
+    "soldToday": 0,
+    "moneyMadeToday": 0
+  },
+  {
+    "id": 5,
+    "product": "Cookies",
+    "stock": 40,
+    "sellPrice": 5,
+    "soldToday": 0,
+    "moneyMadeToday": 0
+  },
+  {
+    "id": 6,
+    "product": "Gummy Brains",
+    "stock": 91,
+    "sellPrice": 1,
+    "soldToday": 0,
+    "moneyMadeToday": 0
+  },
+  {
+    "id": 7,
+    "product": "Gummy Mix",
+    "stock": 86,
+    "sellPrice": 1,
+    "soldToday": 0,
+    "moneyMadeToday": 0
+  },
+  {
+    "id": 8,
+    "product": "Gummy Strips",
+    "stock": 57,
+    "sellPrice": 2,
+    "soldToday": 0,
+    "moneyMadeToday": 0
+  },
+  {
+    "id": 9,
+    "product": "Lollipops",
+    "stock": 125,
+    "sellPrice": 2,
+    "soldToday": 0,
+    "moneyMadeToday": 0
+  },
+  {
+    "id": 10,
+    "product": "Go Slos",
+    "stock": 27,
+    "sellPrice": 8,
+    "soldToday": 0,
+    "moneyMadeToday": 0
+  },
+  {
+    "id": 11,
+    "product": "Papita",
+    "stock": 20,
+    "sellPrice": 8,
+    "soldToday": 0,
+    "moneyMadeToday": 0
+  },
+  {
+    "id": 12,
+    "product": "Chocolates",
+    "stock": 108,
+    "sellPrice": 2,
+    "soldToday": 0,
+    "moneyMadeToday": 0
+  }
+]
