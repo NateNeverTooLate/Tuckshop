@@ -7,14 +7,38 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; }
-    input[type="number"] {
-      width: 90px;
+    .number-input-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      justify-content: flex-end;
+    }
+    .number-input-group input {
+      width: 78px;
       font-size: 1.1rem;
+      text-align: center;
+    }
+    .number-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border-radius: 9999px;
+      background-color: #f3f4f6;
+      color: #374151;
+    }
+    .number-btn:active {
+      background-color: #e5e7eb;
+      transform: scale(0.95);
     }
     @media (max-width: 640px) {
-      input[type="number"] { width: 78px; font-size: 1rem; }
       th, td { padding: 12px 8px; font-size: 0.95rem; }
       .table-container { min-width: 620px; }
+      .number-input-group input { width: 70px; font-size: 1rem; }
+      .number-btn { width: 28px; height: 28px; font-size: 1rem; }
     }
   </style>
 </head>
@@ -68,7 +92,7 @@
     const OWNER = "NateNeverTooLate";
     const REPO = "Tuckshop";
     const BRANCH = "main";
-    const DATA_FILE = "tuck.json";           // ← Fixed: consistent name
+    const DATA_FILE = "tuck.json";
     const HISTORY_FILE = "sales-history.json";
     const TOKEN = "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";
     // ===============================================
@@ -100,9 +124,7 @@
 
     async function saveFile(filePath, contentData) {
       let sha = null;
-      try {
-        sha = await getSha(filePath);
-      } catch (e) {}
+      try { sha = await getSha(filePath); } catch (e) {}
 
       const content = btoa(JSON.stringify(contentData, null, 2));
 
@@ -115,10 +137,7 @@
 
       await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${filePath}`, {
         method: "PUT",
-        headers: {
-          Authorization: `token ${TOKEN}`,
-          "Content-Type": "application/json"
-        },
+        headers: { Authorization: `token ${TOKEN}`, "Content-Type": "application/json" },
         body: JSON.stringify(body)
       });
     }
@@ -134,17 +153,31 @@
         const row = document.createElement("tr");
         row.innerHTML = `
           <td class="px-4 sm:px-6 py-4 font-medium">${item.product}</td>
+          
+          <!-- Stock with +/- buttons -->
           <td class="px-4 sm:px-6 py-4 text-right">
-            <input type="number" min="0" value="${item.stock}"
-                   class="text-right border border-gray-300 rounded-2xl px-4 py-3 text-lg font-mono focus:outline-none focus:border-blue-500 w-[88px]"
-                   onchange="updateStock(${item.id}, this.value)">
+            <div class="number-input-group">
+              <button onclick="changeStock(${item.id}, -1)" class="number-btn">-</button>
+              <input type="number" min="0" value="${item.stock}"
+                     class="border border-gray-300 rounded-2xl px-3 py-3 font-mono focus:outline-none focus:border-blue-500"
+                     onchange="updateStock(${item.id}, this.value)">
+              <button onclick="changeStock(${item.id}, 1)" class="number-btn">+</button>
+            </div>
           </td>
+          
           <td class="px-4 sm:px-6 py-4 text-right font-mono">R${item.sellPrice}</td>
+          
+          <!-- Sold Today with +/- buttons -->
           <td class="px-4 sm:px-6 py-4 text-right">
-            <input type="number" min="0" value="${item.soldToday}"
-                   class="text-right border border-gray-300 rounded-2xl px-4 py-3 text-lg focus:outline-none focus:border-green-500 w-[88px]"
-                   onchange="updateSoldToday(${item.id}, this.value)">
+            <div class="number-input-group">
+              <button onclick="changeSoldToday(${item.id}, -1)" class="number-btn">-</button>
+              <input type="number" min="0" value="${item.soldToday}"
+                     class="border border-gray-300 rounded-2xl px-3 py-3 font-mono focus:outline-none focus:border-green-500"
+                     onchange="updateSoldToday(${item.id}, this.value)">
+              <button onclick="changeSoldToday(${item.id}, 1)" class="number-btn">+</button>
+            </div>
           </td>
+          
           <td class="px-4 sm:px-6 py-4 text-right font-mono text-green-600">R${item.moneyMadeToday || 0}</td>
         `;
         tbody.appendChild(row);
@@ -155,6 +188,25 @@
         <span class="text-3xl font-bold text-green-600 ml-2">R${totalMoney}</span>
       `;
     }
+
+    // ==================== NEW +/- FUNCTIONS ====================
+    window.changeStock = async (id, delta) => {
+      const item = data.find(i => i.id === id);
+      if (item) {
+        item.stock = Math.max(0, item.stock + delta);
+        renderTable();
+        await saveFile(DATA_FILE, data);
+      }
+    };
+
+    window.changeSoldToday = async (id, delta) => {
+      const item = data.find(i => i.id === id);
+      if (item) {
+        item.soldToday = Math.max(0, item.soldToday + delta);
+        renderTable();
+        await saveFile(DATA_FILE, data);
+      }
+    };
 
     window.updateSoldToday = async (id, value) => {
       const item = data.find(i => i.id === id);
@@ -169,18 +221,17 @@
       const item = data.find(i => i.id === id);
       if (item) {
         const newStock = parseFloat(value) || 0;
-        if (newStock !== item.stock) {
-          item.stock = newStock;
-          renderTable();
-          await saveFile(DATA_FILE, data);
-        }
+        item.stock = Math.max(0, newStock);
+        renderTable();
+        await saveFile(DATA_FILE, data);
       }
     };
 
+    // Rest of your functions (startAlgorithm, undo, etc.) remain the same
     window.startAlgorithm = async () => {
       if (!confirm("Process all sales for today?\n\n• Stock will be updated\n• Money made will be calculated\n• Sold Today resets to 0\n• This record will be saved to History")) return;
 
-      undoData = JSON.parse(JSON.stringify(data));   // Save for undo
+      undoData = JSON.parse(JSON.stringify(data));
       document.getElementById("undoBtn").classList.remove("hidden");
 
       const historyEntry = {
@@ -204,7 +255,6 @@
 
       await saveFile(DATA_FILE, data);
 
-      // Save history
       let history = [];
       try {
         const res = await fetch(`https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${HISTORY_FILE}`);
