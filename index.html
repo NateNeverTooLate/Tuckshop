@@ -7,8 +7,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; }
-    input[type="number"] { 
-      width: 90px; 
+    input[type="number"] {
+      width: 90px;
       font-size: 1.1rem;
     }
     @media (max-width: 640px) {
@@ -27,11 +27,11 @@
            class="px-5 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium flex-1 sm:flex-none flex items-center justify-center gap-2">
           📜 History
         </a>
-        <button onclick="refreshData()" 
+        <button onclick="refreshData()"
                 class="px-5 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 text-sm font-medium flex-1 sm:flex-none">
           🔄 Refresh
         </button>
-        <button onclick="startAlgorithm()" 
+        <button onclick="startAlgorithm()"
                 class="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 text-base font-semibold flex-1 sm:flex-none">
           🚀 Start Algorithm
         </button>
@@ -42,7 +42,6 @@
       </div>
     </div>
 
-    <!-- Mobile-friendly scrollable table -->
     <div class="bg-white rounded-3xl shadow-lg overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full table-container min-w-[620px]">
@@ -61,18 +60,17 @@
     </div>
 
     <div id="totalRow" class="mt-6 text-right text-lg sm:text-xl font-semibold text-gray-700 flex justify-end items-baseline gap-2"></div>
-
     <p class="text-center text-xs text-gray-400 mt-8">All changes auto-save to GitHub • Works offline until you refresh</p>
   </div>
 
   <script>
     // ==================== CONFIG ====================
- const OWNER = "NateNeverTooLate";           // ← CHANGE
-    const REPO = "Tuckshop";              // ← CHANGE if different
-    const BRANCH = "main";                          // usually "main"
-    const FILE_PATH = "tuck.json";
+    const OWNER = "NateNeverTooLate";
+    const REPO = "Tuckshop";
+    const BRANCH = "main";
+    const DATA_FILE = "tuck.json";           // ← Fixed: consistent name
     const HISTORY_FILE = "sales-history.json";
-    const TOKEN = "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";         // ← PASTE YOUR TOKEN HERE
+    const TOKEN = "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";
     // ===============================================
 
     let data = [];
@@ -88,9 +86,15 @@
     }
 
     async function loadData() {
-      const url = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${DATA_FILE}`;
-      const res = await fetch(url);
-      data = await res.json();
+      try {
+        const url = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${DATA_FILE}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Failed to load");
+        data = await res.json();
+      } catch (e) {
+        console.error("Load failed:", e);
+        alert("Could not load data. Make sure tuck.json exists in your repo.");
+      }
       renderTable();
     }
 
@@ -98,9 +102,7 @@
       let sha = null;
       try {
         sha = await getSha(filePath);
-      } catch (e) {
-        // file doesn't exist yet (only happens for history on first save)
-      }
+      } catch (e) {}
 
       const content = btoa(JSON.stringify(contentData, null, 2));
 
@@ -124,7 +126,6 @@
     function renderTable() {
       const tbody = document.getElementById("tableBody");
       tbody.innerHTML = "";
-
       let totalMoney = 0;
 
       data.forEach(item => {
@@ -133,21 +134,17 @@
         const row = document.createElement("tr");
         row.innerHTML = `
           <td class="px-4 sm:px-6 py-4 font-medium">${item.product}</td>
-          
           <td class="px-4 sm:px-6 py-4 text-right">
-            <input type="number" min="0" value="${item.stock}" 
+            <input type="number" min="0" value="${item.stock}"
                    class="text-right border border-gray-300 rounded-2xl px-4 py-3 text-lg font-mono focus:outline-none focus:border-blue-500 w-[88px]"
                    onchange="updateStock(${item.id}, this.value)">
           </td>
-          
           <td class="px-4 sm:px-6 py-4 text-right font-mono">R${item.sellPrice}</td>
-          
           <td class="px-4 sm:px-6 py-4 text-right">
-            <input type="number" min="0" value="${item.soldToday}" 
+            <input type="number" min="0" value="${item.soldToday}"
                    class="text-right border border-gray-300 rounded-2xl px-4 py-3 text-lg focus:outline-none focus:border-green-500 w-[88px]"
                    onchange="updateSoldToday(${item.id}, this.value)">
           </td>
-          
           <td class="px-4 sm:px-6 py-4 text-right font-mono text-green-600">R${item.moneyMadeToday || 0}</td>
         `;
         tbody.appendChild(row);
@@ -181,9 +178,11 @@
     };
 
     window.startAlgorithm = async () => {
-      if (!confirm("Process all sales for today?\n\n• Stock will be updated\n• Money made will be calculated\n• Sold Today resets to 0\n• This record will be saved to History\n\nUndo is available right after.")) return;
+      if (!confirm("Process all sales for today?\n\n• Stock will be updated\n• Money made will be calculated\n• Sold Today resets to 0\n• This record will be saved to History")) return;
 
-      // Capture snapshot for history BEFORE we modify the data
+      undoData = JSON.parse(JSON.stringify(data));   // Save for undo
+      document.getElementById("undoBtn").classList.remove("hidden");
+
       const historyEntry = {
         timestamp: new Date().toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }),
         totalMoney: 0,
@@ -194,40 +193,28 @@
         const sold = item.soldToday || 0;
         if (sold > 0) {
           const money = Math.round(item.sellPrice * sold * 100) / 100;
-          historyEntry.items.push({
-            product: item.product,
-            sold: sold,
-            moneyMade: money
-          });
+          historyEntry.items.push({ product: item.product, sold: sold, moneyMade: money });
           historyEntry.totalMoney += money;
 
-          // Now update the live data
           item.stock = Math.max(0, item.stock - sold);
           item.moneyMadeToday = money;
           item.soldToday = 0;
         }
       });
 
-      // Save the updated inventory
       await saveFile(DATA_FILE, data);
 
-      // Save to history (newest first)
+      // Save history
       let history = [];
       try {
         const res = await fetch(`https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${HISTORY_FILE}`);
-        if (res.ok) {
-          const json = await res.json();
-          if (Array.isArray(json)) history = json;
-        }
+        if (res.ok) history = await res.json();
       } catch (e) {}
       
       history.unshift(historyEntry);
       await saveFile(HISTORY_FILE, history);
 
       renderTable();
-      undoData = null; // reset undo because we already saved
-      document.getElementById("undoBtn").classList.add("hidden");
-
       alert("✅ Sales processed!\nStock updated + record saved to History");
     };
 
@@ -238,15 +225,12 @@
       data = JSON.parse(JSON.stringify(undoData));
       undoData = null;
       document.getElementById("undoBtn").classList.add("hidden");
-
       renderTable();
       await saveFile(DATA_FILE, data);
       alert("✅ Last action undone");
     };
 
-    window.refreshData = () => {
-      loadData();
-    };
+    window.refreshData = () => loadData();
 
     // Initial load
     loadData();
