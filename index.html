@@ -23,6 +23,10 @@
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
       <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Tuckshop Inventory</h1>
       <div class="flex flex-wrap gap-3">
+        <a href="history.html"
+           class="px-5 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium flex-1 sm:flex-none flex items-center justify-center gap-2">
+          📜 History
+        </a>
         <button onclick="refreshData()" 
                 class="px-5 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 text-sm font-medium flex-1 sm:flex-none">
           🔄 Refresh
@@ -63,47 +67,57 @@
 
   <script>
     // ==================== CONFIG ====================
-     const OWNER = "NateNeverTooLate";           // ← CHANGE
+ const OWNER = "NateNeverTooLate";           // ← CHANGE
     const REPO = "Tuckshop";              // ← CHANGE if different
     const BRANCH = "main";                          // usually "main"
     const FILE_PATH = "tuck.json";
+    const HISTORY_FILE = "sales-history.json";
     const TOKEN = "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";         // ← PASTE YOUR TOKEN HERE
     // ===============================================
 
     let data = [];
     let undoData = null;
 
-    async function getSha() {
-      const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`, {
+    async function getSha(filePath) {
+      const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${filePath}`, {
         headers: { Authorization: `token ${TOKEN}` }
       });
+      if (!res.ok) throw new Error("File not found");
       const json = await res.json();
       return json.sha;
     }
 
     async function loadData() {
-      const url = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${FILE_PATH}`;
+      const url = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${DATA_FILE}`;
       const res = await fetch(url);
       data = await res.json();
       renderTable();
     }
 
-    async function saveData() {
-      const sha = await getSha();
-      const content = btoa(JSON.stringify(data, null, 2));
+    async function saveFile(filePath, contentData) {
+      let sha = null;
+      try {
+        sha = await getSha(filePath);
+      } catch (e) {
+        // file doesn't exist yet (only happens for history on first save)
+      }
 
-      await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`, {
+      const content = btoa(JSON.stringify(contentData, null, 2));
+
+      const body = {
+        message: filePath === DATA_FILE ? "Update tuckshop data" : "Add daily sales to history",
+        content: content,
+        branch: BRANCH
+      };
+      if (sha) body.sha = sha;
+
+      await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${filePath}`, {
         method: "PUT",
         headers: {
           Authorization: `token ${TOKEN}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          message: "Update tuckshop data",
-          content: content,
-          sha: sha,
-          branch: BRANCH
-        })
+        body: JSON.stringify(body)
       });
     }
 
@@ -120,30 +134,28 @@
         row.innerHTML = `
           <td class="px-4 sm:px-6 py-4 font-medium">${item.product}</td>
           
-          <!-- Editable Stock (for restocking) -->
           <td class="px-4 sm:px-6 py-4 text-right">
             <input type="number" min="0" value="${item.stock}" 
                    class="text-right border border-gray-300 rounded-2xl px-4 py-3 text-lg font-mono focus:outline-none focus:border-blue-500 w-[88px]"
                    onchange="updateStock(${item.id}, this.value)">
           </td>
           
-          <td class="px-4 sm:px-6 py-4 text-right font-mono">$${item.sellPrice}</td>
+          <td class="px-4 sm:px-6 py-4 text-right font-mono">R${item.sellPrice}</td>
           
-          <!-- Sold Today -->
           <td class="px-4 sm:px-6 py-4 text-right">
             <input type="number" min="0" value="${item.soldToday}" 
                    class="text-right border border-gray-300 rounded-2xl px-4 py-3 text-lg focus:outline-none focus:border-green-500 w-[88px]"
                    onchange="updateSoldToday(${item.id}, this.value)">
           </td>
           
-          <td class="px-4 sm:px-6 py-4 text-right font-mono text-green-600">$${item.moneyMadeToday || 0}</td>
+          <td class="px-4 sm:px-6 py-4 text-right font-mono text-green-600">R${item.moneyMadeToday || 0}</td>
         `;
         tbody.appendChild(row);
       });
 
       document.getElementById("totalRow").innerHTML = `
         <span class="text-gray-500">Total money made today:</span>
-        <span class="text-3xl font-bold text-green-600 ml-2">$${totalMoney}</span>
+        <span class="text-3xl font-bold text-green-600 ml-2">R${totalMoney}</span>
       `;
     }
 
@@ -152,11 +164,10 @@
       if (item) {
         item.soldToday = parseFloat(value) || 0;
         renderTable();
-        await saveData();
+        await saveFile(DATA_FILE, data);
       }
     };
 
-    // NEW: Manual stock edit for restocking (changes are permanent and saved instantly)
     window.updateStock = async (id, value) => {
       const item = data.find(i => i.id === id);
       if (item) {
@@ -164,29 +175,60 @@
         if (newStock !== item.stock) {
           item.stock = newStock;
           renderTable();
-          await saveData();
+          await saveFile(DATA_FILE, data);
         }
       }
     };
 
     window.startAlgorithm = async () => {
-      if (!confirm("Process all sales now?\n\n• Sold Today will be subtracted from Stock\n• Money Made Today will be calculated\n• Sold Today resets to 0\n\nUndo button will appear right after.")) return;
+      if (!confirm("Process all sales for today?\n\n• Stock will be updated\n• Money made will be calculated\n• Sold Today resets to 0\n• This record will be saved to History\n\nUndo is available right after.")) return;
 
-      undoData = JSON.parse(JSON.stringify(data));
-      document.getElementById("undoBtn").classList.remove("hidden");
+      // Capture snapshot for history BEFORE we modify the data
+      const historyEntry = {
+        timestamp: new Date().toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }),
+        totalMoney: 0,
+        items: []
+      };
 
       data.forEach(item => {
         const sold = item.soldToday || 0;
         if (sold > 0) {
+          const money = Math.round(item.sellPrice * sold * 100) / 100;
+          historyEntry.items.push({
+            product: item.product,
+            sold: sold,
+            moneyMade: money
+          });
+          historyEntry.totalMoney += money;
+
+          // Now update the live data
           item.stock = Math.max(0, item.stock - sold);
-          item.moneyMadeToday = Math.round(item.sellPrice * sold * 100) / 100; // clean decimals
+          item.moneyMadeToday = money;
           item.soldToday = 0;
         }
       });
 
+      // Save the updated inventory
+      await saveFile(DATA_FILE, data);
+
+      // Save to history (newest first)
+      let history = [];
+      try {
+        const res = await fetch(`https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${HISTORY_FILE}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (Array.isArray(json)) history = json;
+        }
+      } catch (e) {}
+      
+      history.unshift(historyEntry);
+      await saveFile(HISTORY_FILE, history);
+
       renderTable();
-      await saveData();
-      alert("✅ Sales processed and stock updated!");
+      undoData = null; // reset undo because we already saved
+      document.getElementById("undoBtn").classList.add("hidden");
+
+      alert("✅ Sales processed!\nStock updated + record saved to History");
     };
 
     window.undoLastAction = async () => {
@@ -198,7 +240,7 @@
       document.getElementById("undoBtn").classList.add("hidden");
 
       renderTable();
-      await saveData();
+      await saveFile(DATA_FILE, data);
       alert("✅ Last action undone");
     };
 
