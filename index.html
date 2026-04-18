@@ -118,19 +118,19 @@
         data = await res.json();
       } catch (e) {
         console.error("Load failed:", e);
-        alert("Could not load tuck.json. Check file name and internet.");
+        alert("Could not load tuck.json");
       }
       renderTable();
     }
 
+    // FIXED SAVE FUNCTION
     async function saveFile(filePath, contentData) {
       try {
         let sha = null;
-        try {
-          sha = await getSha(filePath);
-        } catch (e) {}
+        try { sha = await getSha(filePath); } catch (e) {}
 
-        const content = btoa(unescape(encodeURIComponent(JSON.stringify(contentData, null, 2))));
+        const jsonStr = JSON.stringify(contentData, null, 2);
+        const content = btoa(unescape(encodeURIComponent(jsonStr)));
 
         const body = {
           message: filePath === DATA_FILE ? "Update inventory" : "Add sales history",
@@ -149,15 +149,14 @@
         });
 
         if (!res.ok) {
-          const err = await res.json();
-          console.error("Save failed:", err);
-          alert("Save failed! Check console (F12) for details.");
+          console.error("GitHub save failed:", await res.text());
+          alert("Failed to save to GitHub. Check your token or internet.");
           return false;
         }
         return true;
       } catch (e) {
         console.error("Save error:", e);
-        alert("Failed to save to GitHub. Check your token and internet.");
+        alert("Save error occurred. Check console (F12).");
         return false;
       }
     }
@@ -173,7 +172,9 @@
         const row = document.createElement("tr");
         row.innerHTML = `
           <td class="px-4 sm:px-6 py-4 font-medium">
-            ${editMode ? `<input type="text" value="${item.product}" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm" onchange="updateProductName(${item.id}, this.value)">` : item.product}
+            ${editMode ? 
+              `<input type="text" value="${item.product}" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm" onchange="updateProductName(${item.id}, this.value)">` : 
+              item.product}
           </td>
           <td class="px-4 sm:px-6 py-4 text-right">
             <div class="number-input-group">
@@ -183,7 +184,9 @@
             </div>
           </td>
           <td class="px-4 sm:px-6 py-4 text-right">
-            ${editMode ? `<input type="number" value="${item.sellPrice}" class="w-20 border border-gray-300 rounded-xl px-3 py-2 text-right" onchange="updatePrice(${item.id}, this.value)">` : `R${item.sellPrice}`}
+            ${editMode ? 
+              `<input type="number" value="${item.sellPrice}" class="w-20 border border-gray-300 rounded-xl px-3 py-2 text-right" onchange="updatePrice(${item.id}, this.value)">` : 
+              `R${item.sellPrice}`}
           </td>
           <td class="px-4 sm:px-6 py-4 text-right">
             <div class="number-input-group">
@@ -192,7 +195,7 @@
               <button onclick="changeSoldToday(${item.id}, 1)" class="number-btn">+</button>
             </div>
           </td>
-          <td class="px-4 sm:px-6 py-4 text-right font-mono text-green-600">R${item.moneyMadeToday || 0}</td>
+          <td class="px-4 sm:px-6 py-4 text-right font-mono text-green-600">R${(item.moneyMadeToday || 0).toFixed(2)}</td>
           <td class="px-4 sm:px-6 py-4 text-center">
             ${editMode ? `<button onclick="deleteItem(${item.id})" class="text-red-600 hover:text-red-700 text-2xl font-bold">×</button>` : ''}
           </td>
@@ -202,11 +205,11 @@
 
       document.getElementById("totalRow").innerHTML = `
         <span class="text-gray-500">Total money made today:</span>
-        <span class="text-3xl font-bold text-green-600 ml-2">R${totalMoney}</span>
+        <span class="text-3xl font-bold text-green-600 ml-2">R${totalMoney.toFixed(2)}</span>
       `;
     }
 
-    // ==================== ADD & EDIT FUNCTIONS ====================
+    // Add, Edit, Delete functions (same as before)
     window.addNewItem = async () => {
       const product = prompt("Enter Product Name:")?.trim();
       if (!product) return;
@@ -214,8 +217,8 @@
       const price = parseFloat(prompt("Sell Price (R):", "10")) || 10;
 
       const newId = data.length ? Math.max(...data.map(i => i.id)) + 1 : 1;
-
       data.push({ id: newId, product, stock, sellPrice: price, soldToday: 0, moneyMadeToday: 0 });
+
       renderTable();
       await saveFile(DATA_FILE, data);
     };
@@ -247,7 +250,7 @@
       await saveFile(DATA_FILE, data);
     };
 
-    // ==================== +/- BUTTONS ====================
+    // +/- and update functions
     window.changeStock = async (id, delta) => {
       const item = data.find(i => i.id === id);
       if (item) {
@@ -284,11 +287,10 @@
       }
     };
 
-    // ==================== FIXED START ALGORITHM ====================
+    // FIXED START ALGORITHM
     window.startAlgorithm = async () => {
-      if (!confirm("Process all sales for today?\n\nThis will:\n• Update stock\n• Calculate money made\n• Save to history\n• Reset Sold Today")) return;
+      if (!confirm("Process all sales for today?\n\n• Stock will be reduced\n• Money made will be calculated\n• Record saved to History")) return;
 
-      // Save current state for undo BEFORE changing anything
       undoData = JSON.parse(JSON.stringify(data));
       document.getElementById("undoBtn").classList.remove("hidden");
 
@@ -299,7 +301,7 @@
       };
 
       data.forEach(item => {
-        const sold = item.soldToday || 0;
+        const sold = parseFloat(item.soldToday) || 0;
         if (sold > 0) {
           const money = Math.round(item.sellPrice * sold * 100) / 100;
           historyEntry.items.push({ product: item.product, sold: sold, moneyMade: money });
@@ -311,11 +313,10 @@
         }
       });
 
-      // Save inventory first
-      const inventorySaved = await saveFile(DATA_FILE, data);
-      if (!inventorySaved) return;
+      // Save changes
+      await saveFile(DATA_FILE, data);
 
-      // Save to history
+      // Save history
       let history = [];
       try {
         const res = await fetch(`https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${HISTORY_FILE}`);
@@ -326,11 +327,11 @@
       await saveFile(HISTORY_FILE, history);
 
       renderTable();
-      alert("✅ Sales successfully processed and saved!");
+      alert("✅ Sales processed successfully!\nStock updated + History saved");
     };
 
     window.undoLastAction = async () => {
-      if (!undoData || !confirm("Undo last sales processing?")) return;
+      if (!undoData || !confirm("Undo last sales?")) return;
       data = JSON.parse(JSON.stringify(undoData));
       undoData = null;
       document.getElementById("undoBtn").classList.add("hidden");
