@@ -280,5 +280,58 @@
 
     loadData();
   </script>
+
+  <script>
+// ==================== CONFIG ====================
+const API_BASE = "/api";   // This works on Vercel
+// ===============================================
+
+let data = [];
+let undoData = null;
+let editMode = false;
+
+// New helper functions
+async function apiGet(file = "tuck.json") {
+  const res = await fetch(`${API_BASE}/get?file=${file}`);
+  if (!res.ok) throw new Error("Load failed");
+  return await res.json();
+}
+
+async function apiUpdate(file, content) {
+  const res = await fetch(`${API_BASE}/update`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ file, content })
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || "Save failed");
+  return json;
+}
+
+// Rest of your code stays almost the same, just change load/save calls
+async function loadData() {
+  try {
+    data = await apiGet("tuck.json");
+  } catch (e) {
+    alert("Could not load data");
+  }
+  renderTable();
+}
+
+async function saveFile(filePath, contentData) {
+  try {
+    await apiUpdate(filePath, contentData);
+    return true;
+  } catch (e) {
+    alert("Save failed: " + e.message);
+    return false;
+  }
+}
+
+// ... (keep all your other functions: renderTable, addNewItem, startAlgorithm, etc.)
+
+// Just make sure loadData and saveFile use the new api functions above
+window.onload = loadData;   // or call loadData() at the end
+</script>
 </body>
 </html>
