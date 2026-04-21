@@ -1,3 +1,6 @@
+export const config = {
+  runtime: "nodejs"
+};
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
@@ -22,7 +25,10 @@ export default async function handler(req, res) {
       }
     } catch (e) {}
 
-    const encodedContent = btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2))));
+   const encodedContent = Buffer.from(
+  JSON.stringify(content, null, 2),
+  "utf-8"
+).toString("base64");
 
     const body = {
       message: filePath === "tuck.json" ? "Update tuckshop inventory" : "Add sales history",
