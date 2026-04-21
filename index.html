@@ -1,4 +1,44 @@
 <!DOCTYPE html>
+  await fetch('/api/saveData', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+}
+
+async function startAlgorithm() {
+  backup = JSON.parse(JSON.stringify(data));
+
+  data.forEach(item => {
+    const sold = item.soldToday;
+    if (sold > 0) {
+      item.stock = Math.max(0, item.stock - sold);
+      item.moneyMadeToday = sold * item.sellPrice;
+      item.soldToday = 0;
+    }
+  });
+
+  await save();
+  render();
+}
+
+async function undo() {
+  if (!backup) return;
+  data = JSON.parse(JSON.stringify(backup));
+  await save();
+  render();
+}
+
+function refresh() {
+  load();
+}
+
+load();
+</script>
+
+</body>
+</html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
