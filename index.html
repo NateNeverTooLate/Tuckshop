@@ -52,78 +52,52 @@
     </div>
 
     <div id="totalRow" class="mt-6 text-right text-lg sm:text-xl font-semibold text-gray-700 flex justify-end items-baseline gap-2"></div>
-    <p class="text-center text-xs text-gray-400 mt-8">All changes auto-save to GitHub</p>
+    <p class="text-center text-xs text-gray-400 mt-8">All changes auto-save via Vercel</p>
   </div>
 
   <script>
     // ==================== CONFIG ====================
-    const OWNER = "NateNeverTooLate";
-    const REPO = "Tuckshop";
-    const BRANCH = "main";
-    const DATA_FILE = "tuck.json";
-    const HISTORY_FILE = "sales-history.json";
-    const TOKEN = "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";   // ← PASTE YOUR NEW CLASSIC TOKEN HERE
+    const API_BASE = "/api";
     // ===============================================
 
     let data = [];
     let undoData = null;
     let editMode = false;
 
-    async function getSha(filePath) {
-      const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${filePath}`, {
-        headers: { Authorization: `token ${TOKEN}` }
+    async function apiGet(file = "tuck.json") {
+      const res = await fetch(`${API_BASE}/get?file=${file}`);
+      if (!res.ok) throw new Error("Load failed");
+      return await res.json();
+    }
+
+    async function apiUpdate(file, content) {
+      const res = await fetch(`${API_BASE}/update`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ file, content })
       });
-      if (!res.ok) throw new Error(`SHA fetch failed: ${res.status}`);
       const json = await res.json();
-      return json.sha;
+      if (!res.ok) throw new Error(json.error || "Save failed");
+      return json;
     }
 
     async function loadData() {
       try {
-        const url = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${DATA_FILE}`;
-        const res = await fetch(url);
-        data = await res.json();
+        data = await apiGet("tuck.json");
       } catch (e) {
         console.error(e);
-        alert("Could not load data. Check tuck.json exists.");
+        alert("Could not load data from server");
       }
       renderTable();
     }
 
     async function saveFile(filePath, contentData) {
       try {
-        let sha = null;
-        try { sha = await getSha(filePath); } catch (e) {}
-
-        const jsonStr = JSON.stringify(contentData, null, 2);
-        const content = btoa(unescape(encodeURIComponent(jsonStr)));
-
-        const body = {
-          message: filePath === DATA_FILE ? "Update inventory" : "Add sales history",
-          content: content,
-          branch: BRANCH
-        };
-        if (sha) body.sha = sha;
-
-        const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${filePath}`, {
-          method: "PUT",
-          headers: { 
-            Authorization: `token ${TOKEN}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(body)
-        });
-
-        if (!res.ok) {
-          const errText = await res.text();
-          console.error("Save Error:", res.status, errText);
-          alert(`Save Failed!\nStatus: ${res.status}\n\nCopy this error and send it to me:\n${errText}`);
-          return false;
-        }
+        await apiUpdate(filePath, contentData);
         return true;
       } catch (e) {
         console.error(e);
-        alert("Save error - check console (F12)");
+        alert("Save failed: " + e.message);
         return false;
       }
     }
@@ -165,7 +139,7 @@
       `;
     }
 
-    // Add Item, Edit Mode, etc.
+    // ==================== ALL OTHER FUNCTIONS ====================
     window.addNewItem = async () => {
       const product = prompt("Product Name:")?.trim();
       if (!product) return;
@@ -174,7 +148,7 @@
       const newId = data.length ? Math.max(...data.map(i => i.id)) + 1 : 1;
       data.push({id: newId, product, stock, sellPrice: price, soldToday: 0, moneyMadeToday: 0});
       renderTable();
-      await saveFile(DATA_FILE, data);
+      await saveFile("tuck.json", data);
     };
 
     window.toggleEditMode = () => {
@@ -187,54 +161,53 @@
     window.updateProductName = async (id, newName) => {
       const item = data.find(i => i.id === id);
       if (item) item.product = newName.trim();
-      await saveFile(DATA_FILE, data);
+      await saveFile("tuck.json", data);
     };
 
     window.updatePrice = async (id, newPrice) => {
       const item = data.find(i => i.id === id);
       if (item) item.sellPrice = parseFloat(newPrice) || 0;
       renderTable();
-      await saveFile(DATA_FILE, data);
+      await saveFile("tuck.json", data);
     };
 
     window.deleteItem = async (id) => {
-      if (!confirm("Delete?")) return;
+      if (!confirm("Delete this product?")) return;
       data = data.filter(i => i.id !== id);
       renderTable();
-      await saveFile(DATA_FILE, data);
+      await saveFile("tuck.json", data);
     };
 
     window.changeStock = async (id, delta) => {
       const item = data.find(i => i.id === id);
       if (item) item.stock = Math.max(0, item.stock + delta);
       renderTable();
-      await saveFile(DATA_FILE, data);
+      await saveFile("tuck.json", data);
     };
 
     window.changeSoldToday = async (id, delta) => {
       const item = data.find(i => i.id === id);
       if (item) item.soldToday = Math.max(0, item.soldToday + delta);
       renderTable();
-      await saveFile(DATA_FILE, data);
+      await saveFile("tuck.json", data);
     };
 
     window.updateSoldToday = async (id, value) => {
       const item = data.find(i => i.id === id);
       if (item) item.soldToday = parseFloat(value) || 0;
       renderTable();
-      await saveFile(DATA_FILE, data);
+      await saveFile("tuck.json", data);
     };
 
     window.updateStock = async (id, value) => {
       const item = data.find(i => i.id === id);
       if (item) item.stock = Math.max(0, parseFloat(value) || 0);
       renderTable();
-      await saveFile(DATA_FILE, data);
+      await saveFile("tuck.json", data);
     };
 
     window.startAlgorithm = async () => {
-      if (!confirm("Process sales now?")) return;
-
+      if (!confirm("Process all sales now?")) return;
       undoData = JSON.parse(JSON.stringify(data));
       document.getElementById("undoBtn").classList.remove("hidden");
 
@@ -252,7 +225,7 @@
         }
       });
 
-      await saveFile(DATA_FILE, data);
+      await saveFile("tuck.json", data);
 
       let history = [];
       try {
@@ -261,77 +234,25 @@
       } catch (e) {}
 
       history.unshift(historyEntry);
-      await saveFile(HISTORY_FILE, history);
+      await saveFile("sales-history.json", history);
 
       renderTable();
-      alert("✅ Done! Stock updated and history saved.");
+      alert("✅ Sales processed successfully!");
     };
 
     window.undoLastAction = async () => {
-      if (!undoData || !confirm("Undo?")) return;
+      if (!undoData || !confirm("Undo last action?")) return;
       data = JSON.parse(JSON.stringify(undoData));
       undoData = null;
       document.getElementById("undoBtn").classList.add("hidden");
       renderTable();
-      await saveFile(DATA_FILE, data);
+      await saveFile("tuck.json", data);
     };
 
     window.refreshData = () => loadData();
 
+    // Initial load
     loadData();
   </script>
-
-  <script>
-// ==================== CONFIG ====================
-const API_BASE = "/api";   // This works on Vercel
-// ===============================================
-
-let data = [];
-let undoData = null;
-let editMode = false;
-
-// New helper functions
-async function apiGet(file = "tuck.json") {
-  const res = await fetch(`${API_BASE}/get?file=${file}`);
-  if (!res.ok) throw new Error("Load failed");
-  return await res.json();
-}
-
-async function apiUpdate(file, content) {
-  const res = await fetch(`${API_BASE}/update`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ file, content })
-  });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || "Save failed");
-  return json;
-}
-
-// Rest of your code stays almost the same, just change load/save calls
-async function loadData() {
-  try {
-    data = await apiGet("tuck.json");
-  } catch (e) {
-    alert("Could not load data");
-  }
-  renderTable();
-}
-
-async function saveFile(filePath, contentData) {
-  try {
-    await apiUpdate(filePath, contentData);
-    return true;
-  } catch (e) {
-    alert("Save failed: " + e.message);
-    return false;
-  }
-}
-
-// ... (keep all your other functions: renderTable, addNewItem, startAlgorithm, etc.)
-
-// Just make sure loadData and saveFile use the new api functions above
-window.onload = loadData;   // or call loadData() at the end
-</script>
 </body>
 </html>
