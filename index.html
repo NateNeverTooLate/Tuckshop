@@ -55,204 +55,258 @@
     <p class="text-center text-xs text-gray-400 mt-8">All changes auto-save via Vercel</p>
   </div>
 
-  <script>
-    // ==================== CONFIG ====================
-    const API_BASE = "/api";
-    // ===============================================
+ <script>
+  // ==================== CONFIG ====================
+  const API_BASE = "/api";
+  // ===============================================
 
-    let data = [];
-    let undoData = null;
-    let editMode = false;
+  let data = [];
+  let undoData = null;
+  let editMode = false;
 
-    async function apiGet(file = "tuck.json") {
-      const res = await fetch(`${API_BASE}/get?file=${file}`);
-      if (!res.ok) throw new Error("Load failed");
-      return await res.json();
+  async function apiGet(file = "tuck.json") {
+    const res = await fetch(`${API_BASE}/get?file=${file}`);
+    if (!res.ok) throw new Error("Load failed");
+    return await res.json();
+  }
+
+  async function apiUpdate(file, content) {
+    const res = await fetch(`${API_BASE}/update`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ file, content })
+    });
+
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Save failed");
+    return json;
+  }
+
+  async function loadData() {
+    try {
+      data = await apiGet("tuck.json");
+    } catch (e) {
+      console.error(e);
+      alert("Could not load data from server");
     }
+    renderTable();
+  }
 
-    async function apiUpdate(file, content) {
-      const res = await fetch(`${API_BASE}/update`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file, content })
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Save failed");
-      return json;
-    }
+  // ==================== RENDER ====================
+  function renderTable() {
+    const tbody = document.getElementById("tableBody");
+    tbody.innerHTML = "";
 
-    async function loadData() {
-      try {
-        data = await apiGet("tuck.json");
-      } catch (e) {
-        console.error(e);
-        alert("Could not load data from server");
-      }
-      renderTable();
-    }
+    let totalMoney = 0;
 
-    async function saveFile(filePath, contentData) {
-      try {
-        await apiUpdate(filePath, contentData);
-        return true;
-      } catch (e) {
-        console.error(e);
-        alert("Save failed: " + e.message);
-        return false;
-      }
-    }
+    data.forEach(item => {
+      totalMoney += item.moneyMadeToday || 0;
 
-    function renderTable() {
-      const tbody = document.getElementById("tableBody");
-      tbody.innerHTML = "";
-      let totalMoney = 0;
+      const row = document.createElement("tr");
 
-      data.forEach(item => {
-        totalMoney += item.moneyMadeToday || 0;
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td class="px-4 sm:px-6 py-4 font-medium">${editMode ? `<input type="text" value="${item.product}" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm" onchange="updateProductName(${item.id}, this.value)">` : item.product}</td>
-          <td class="px-4 sm:px-6 py-4 text-right">
-            <div class="number-input-group">
-              <button onclick="changeStock(${item.id}, -1)" class="number-btn">-</button>
-              <input type="number" min="0" value="${item.stock}" class="border border-gray-300 rounded-2xl px-3 py-3 font-mono focus:outline-none focus:border-blue-500" onchange="updateStock(${item.id}, this.value)">
-              <button onclick="changeStock(${item.id}, 1)" class="number-btn">+</button>
-            </div>
-          </td>
-          <td class="px-4 sm:px-6 py-4 text-right">${editMode ? `<input type="number" value="${item.sellPrice}" class="w-20 border border-gray-300 rounded-xl px-3 py-2 text-right" onchange="updatePrice(${item.id}, this.value)">` : `R${item.sellPrice}`}</td>
-          <td class="px-4 sm:px-6 py-4 text-right">
-            <div class="number-input-group">
-              <button onclick="changeSoldToday(${item.id}, -1)" class="number-btn">-</button>
-              <input type="number" min="0" value="${item.soldToday}" class="border border-gray-300 rounded-2xl px-3 py-3 font-mono focus:outline-none focus:border-green-500" onchange="updateSoldToday(${item.id}, this.value)">
-              <button onclick="changeSoldToday(${item.id}, 1)" class="number-btn">+</button>
-            </div>
-          </td>
-          <td class="px-4 sm:px-6 py-4 text-right font-mono text-green-600">R${(item.moneyMadeToday || 0).toFixed(2)}</td>
-          <td class="px-4 sm:px-6 py-4 text-center">${editMode ? `<button onclick="deleteItem(${item.id})" class="text-red-600 text-2xl">×</button>` : ''}</td>
-        `;
-        tbody.appendChild(row);
-      });
+      row.innerHTML = `
+        <td class="px-4 sm:px-6 py-4 font-medium">
+          ${editMode ? `
+            <input type="text" value="${item.product}"
+              class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm"
+              oninput="updateProductName(${item.id}, this.value)">
+          ` : item.product}
+        </td>
 
-      document.getElementById("totalRow").innerHTML = `
-        <span class="text-gray-500">Total money made today:</span>
-        <span class="text-3xl font-bold text-green-600 ml-2">R${totalMoney.toFixed(2)}</span>
+        <td class="px-4 sm:px-6 py-4 text-right">
+          <div class="number-input-group">
+            <button onclick="changeStock(${item.id}, -1)" class="number-btn">-</button>
+            <input type="number" min="0" value="${item.stock}"
+              class="border border-gray-300 rounded-2xl px-3 py-3 font-mono"
+              oninput="updateStock(${item.id}, this.value)">
+            <button onclick="changeStock(${item.id}, 1)" class="number-btn">+</button>
+          </div>
+        </td>
+
+        <td class="px-4 sm:px-6 py-4 text-right">
+          ${editMode ? `
+            <input type="number" value="${item.sellPrice}"
+              class="w-20 border border-gray-300 rounded-xl px-3 py-2 text-right"
+              oninput="updatePrice(${item.id}, this.value)">
+          ` : `R${item.sellPrice}`}
+        </td>
+
+        <td class="px-4 sm:px-6 py-4 text-right">
+          <div class="number-input-group">
+            <button onclick="changeSoldToday(${item.id}, -1)" class="number-btn">-</button>
+            <input type="number" min="0" value="${item.soldToday}"
+              class="border border-gray-300 rounded-2xl px-3 py-3 font-mono"
+              oninput="updateSoldToday(${item.id}, this.value)">
+            <button onclick="changeSoldToday(${item.id}, 1)" class="number-btn">+</button>
+          </div>
+        </td>
+
+        <td class="px-4 sm:px-6 py-4 text-right font-mono text-green-600">
+          R${(item.moneyMadeToday || 0).toFixed(2)}
+        </td>
+
+        <td class="px-4 sm:px-6 py-4 text-center">
+          ${editMode ? `<button onclick="deleteItem(${item.id})" class="text-red-600 text-2xl">×</button>` : ""}
+        </td>
       `;
+
+      tbody.appendChild(row);
+    });
+
+    document.getElementById("totalRow").innerHTML = `
+      <span class="text-gray-500">Total money made today:</span>
+      <span class="text-3xl font-bold text-green-600 ml-2">
+        R${totalMoney.toFixed(2)}
+      </span>
+    `;
+  }
+
+  // ==================== LOCAL ONLY EDITS ====================
+
+  window.changeStock = (id, delta) => {
+    const item = data.find(i => i.id === id);
+    if (item) item.stock = Math.max(0, item.stock + delta);
+    renderTable();
+  };
+
+  window.changeSoldToday = (id, delta) => {
+    const item = data.find(i => i.id === id);
+    if (item) item.soldToday = Math.max(0, item.soldToday + delta);
+    renderTable();
+  };
+
+  window.updateStock = (id, value) => {
+    const item = data.find(i => i.id === id);
+    if (item) item.stock = Math.max(0, parseFloat(value) || 0);
+    renderTable();
+  };
+
+  window.updateSoldToday = (id, value) => {
+    const item = data.find(i => i.id === id);
+    if (item) item.soldToday = Math.max(0, parseFloat(value) || 0);
+    renderTable();
+  };
+
+  window.updatePrice = (id, value) => {
+    const item = data.find(i => i.id === id);
+    if (item) item.sellPrice = parseFloat(value) || 0;
+    renderTable();
+  };
+
+  window.updateProductName = (id, value) => {
+    const item = data.find(i => i.id === id);
+    if (item) item.product = value;
+  };
+
+  window.deleteItem = (id) => {
+    if (!confirm("Delete item?")) return;
+    data = data.filter(i => i.id !== id);
+    renderTable();
+  };
+
+  window.addNewItem = () => {
+    const product = prompt("Product Name:")?.trim();
+    if (!product) return;
+
+    const stock = parseFloat(prompt("Stock:", "0")) || 0;
+    const price = parseFloat(prompt("Price:", "10")) || 10;
+
+    const newId = data.length ? Math.max(...data.map(i => i.id)) + 1 : 1;
+
+    data.push({
+      id: newId,
+      product,
+      stock,
+      sellPrice: price,
+      soldToday: 0,
+      moneyMadeToday: 0
+    });
+
+    renderTable();
+  };
+
+  // ==================== MODE TOGGLE ====================
+
+  window.toggleEditMode = () => {
+    editMode = !editMode;
+    document.getElementById("editBtn").textContent =
+      editMode ? "✅ Done Editing" : "✏️ Edit Mode";
+    document.getElementById("actionHeader").textContent =
+      editMode ? "Delete" : "";
+    renderTable();
+  };
+
+  // ==================== START ALGORITHM (ONLY SAVE HERE) ====================
+
+  window.startAlgorithm = async () => {
+    if (!confirm("Process all sales now?")) return;
+
+    const historyEntry = {
+      timestamp: new Date().toLocaleString("en-ZA", {
+        dateStyle: "medium",
+        timeStyle: "short"
+      }),
+      totalMoney: 0,
+      items: []
+    };
+
+    data.forEach(item => {
+      const sold = parseFloat(item.soldToday) || 0;
+
+      if (sold > 0) {
+        const money = Math.round(item.sellPrice * sold * 100) / 100;
+
+        historyEntry.items.push({
+          product: item.product,
+          sold,
+          moneyMade: money
+        });
+
+        historyEntry.totalMoney += money;
+
+        item.stock = Math.max(0, item.stock - sold);
+        item.moneyMadeToday = money;
+        item.soldToday = 0;
+      }
+    });
+
+    // SAVE INVENTORY
+    await apiUpdate("tuck.json", data);
+
+    // LOAD HISTORY
+    let history = [];
+    try {
+      history = await apiGet("sales-history.json");
+    } catch {
+      history = [];
     }
 
-    // ==================== ALL OTHER FUNCTIONS ====================
-    window.addNewItem = async () => {
-      const product = prompt("Product Name:")?.trim();
-      if (!product) return;
-      const stock = parseFloat(prompt("Stock:", "0")) || 0;
-      const price = parseFloat(prompt("Price (R):", "10")) || 10;
-      const newId = data.length ? Math.max(...data.map(i => i.id)) + 1 : 1;
-      data.push({id: newId, product, stock, sellPrice: price, soldToday: 0, moneyMadeToday: 0});
-      renderTable();
-      await saveFile("tuck.json", data);
-    };
+    history.unshift(historyEntry);
 
-    window.toggleEditMode = () => {
-      editMode = !editMode;
-      document.getElementById("editBtn").textContent = editMode ? "✅ Done Editing" : "✏️ Edit Mode";
-      document.getElementById("actionHeader").textContent = editMode ? "Delete" : "";
-      renderTable();
-    };
+    // SAVE HISTORY
+    await apiUpdate("sales-history.json", history);
 
-    window.updateProductName = async (id, newName) => {
-      const item = data.find(i => i.id === id);
-      if (item) item.product = newName.trim();
-      await saveFile("tuck.json", data);
-    };
+    renderTable();
+    alert("✅ Sales processed successfully!");
+  };
 
-    window.updatePrice = async (id, newPrice) => {
-      const item = data.find(i => i.id === id);
-      if (item) item.sellPrice = parseFloat(newPrice) || 0;
-      renderTable();
-      await saveFile("tuck.json", data);
-    };
+  // ==================== UNDO ====================
 
-    window.deleteItem = async (id) => {
-      if (!confirm("Delete this product?")) return;
-      data = data.filter(i => i.id !== id);
-      renderTable();
-      await saveFile("tuck.json", data);
-    };
+  window.undoLastAction = async () => {
+    if (!undoData || !confirm("Undo last action?")) return;
 
-    window.changeStock = async (id, delta) => {
-      const item = data.find(i => i.id === id);
-      if (item) item.stock = Math.max(0, item.stock + delta);
-      renderTable();
-      await saveFile("tuck.json", data);
-    };
+    data = JSON.parse(JSON.stringify(undoData));
+    undoData = null;
 
-    window.changeSoldToday = async (id, delta) => {
-      const item = data.find(i => i.id === id);
-      if (item) item.soldToday = Math.max(0, item.soldToday + delta);
-      renderTable();
-      await saveFile("tuck.json", data);
-    };
+    renderTable();
 
-    window.updateSoldToday = async (id, value) => {
-      const item = data.find(i => i.id === id);
-      if (item) item.soldToday = parseFloat(value) || 0;
-      renderTable();
-      await saveFile("tuck.json", data);
-    };
+    await apiUpdate("tuck.json", data);
+  };
 
-    window.updateStock = async (id, value) => {
-      const item = data.find(i => i.id === id);
-      if (item) item.stock = Math.max(0, parseFloat(value) || 0);
-      renderTable();
-      await saveFile("tuck.json", data);
-    };
+  window.refreshData = () => loadData();
 
-    window.startAlgorithm = async () => {
-      if (!confirm("Process all sales now?")) return;
-      undoData = JSON.parse(JSON.stringify(data));
-      document.getElementById("undoBtn").classList.remove("hidden");
-
-      const historyEntry = { timestamp: new Date().toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }), totalMoney: 0, items: [] };
-
-      data.forEach(item => {
-        const sold = parseFloat(item.soldToday) || 0;
-        if (sold > 0) {
-          const money = Math.round(item.sellPrice * sold * 100) / 100;
-          historyEntry.items.push({product: item.product, sold, moneyMade: money});
-          historyEntry.totalMoney += money;
-          item.stock = Math.max(0, item.stock - sold);
-          item.moneyMadeToday = money;
-          item.soldToday = 0;
-        }
-      });
-
-      await saveFile("tuck.json", data);
-
-      let history = [];
-      try {
-        const res = await fetch(`https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${HISTORY_FILE}`);
-        if (res.ok) history = await res.json();
-      } catch (e) {}
-
-      history.unshift(historyEntry);
-      await saveFile("sales-history.json", history);
-
-      renderTable();
-      alert("✅ Sales processed successfully!");
-    };
-
-    window.undoLastAction = async () => {
-      if (!undoData || !confirm("Undo last action?")) return;
-      data = JSON.parse(JSON.stringify(undoData));
-      undoData = null;
-      document.getElementById("undoBtn").classList.add("hidden");
-      renderTable();
-      await saveFile("tuck.json", data);
-    };
-
-    window.refreshData = () => loadData();
-
-    // Initial load
-    loadData();
-  </script>
+  // ==================== INIT ====================
+  loadData();
+</script>
 </body>
 </html>
