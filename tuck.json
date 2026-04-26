@@ -98,9 +98,9 @@
   {
     "id": 13,
     "product": "test",
-    "stock": 12,
+    "stock": 6,
     "sellPrice": 10,
-    "soldToday": 6,
-    "moneyMadeToday": 0
+    "soldToday": 0,
+    "moneyMadeToday": 60
   }
 ]
