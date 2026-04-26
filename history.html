@@ -1,123 +1,91 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Tuckshop Sales History</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { font-family: system-ui, -apple-system, sans-serif; }
-    @media (max-width: 640px) {
-      .card { padding: 16px; }
-    }
-  </style>
-</head>
-<body class="bg-gray-50 min-h-screen">
-  <div class="max-w-4xl mx-auto p-4 sm:p-6">
-    <div class="flex justify-between items-center mb-8">
-      <h1 class="text-3xl font-bold text-gray-800">📜 Sales History</h1>
-      <div class="flex gap-3">
-        <a href="index.html"
-           class="px-6 py-3 bg-gray-700 text-white rounded-2xl hover:bg-gray-800 text-sm font-medium flex items-center gap-2">
-          ← Back to Inventory
-        </a>
-        <button onclick="refreshHistory()" 
-                class="px-6 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 text-sm font-medium">
-          🔄 Refresh
-        </button>
-      </div>
-    </div>
+<script>
+  // ==================== CONFIG ====================
+  const API_BASE = "/api";
+  const HISTORY_FILE = "sales-history.json";
+  // ===============================================
 
-    <div id="historyContainer" class="space-y-6"></div>
+  let historyData = [];
 
-    <p id="emptyMessage" class="text-center text-gray-400 py-12 hidden">
-      No sales recorded yet.<br>Run the algorithm on the main page to start saving daily records.
-    </p>
+  // ✅ LOAD VIA YOUR BACKEND (NOT RAW GITHUB)
+  async function loadHistory() {
+    try {
+      const res = await fetch(`${API_BASE}/get?file=${HISTORY_FILE}`);
 
-    <p class="text-center text-xs text-gray-400 mt-12">All history is saved permanently on GitHub</p>
-  </div>
+      if (!res.ok) throw new Error("Failed to load");
 
-  <script>
-    // ==================== CONFIG ====================
-    const OWNER = "YOUR_GITHUB_USERNAME";           // ← CHANGE (same as index.html)
-    const REPO = "tuckshop-inventory";              // ← CHANGE (same as index.html)
-    const BRANCH = "main";
-    const HISTORY_FILE = "sales-history.json";
-    // ===============================================
+      historyData = await res.json();
 
-    let historyData = [];
-
-    async function loadHistory() {
-      const url = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${HISTORY_FILE}`;
-      try {
-        const res = await fetch(url);
-        if (res.ok) {
-          const json = await res.json();
-          historyData = Array.isArray(json) ? json : [];
-        } else {
-          historyData = [];
-        }
-      } catch (e) {
+      if (!Array.isArray(historyData)) {
         historyData = [];
       }
-      renderHistory();
+    } catch (e) {
+      console.error(e);
+      historyData = [];
     }
 
-    function renderHistory() {
-      const container = document.getElementById("historyContainer");
-      const emptyMsg = document.getElementById("emptyMessage");
-      container.innerHTML = "";
+    renderHistory();
+  }
 
-      if (historyData.length === 0) {
-        emptyMsg.classList.remove("hidden");
-        return;
-      }
-      emptyMsg.classList.add("hidden");
+  function renderHistory() {
+    const container = document.getElementById("historyContainer");
+    const emptyMsg = document.getElementById("emptyMessage");
 
-      historyData.forEach(entry => {
-        let itemsHTML = "";
-        if (entry.items && entry.items.length > 0) {
-          itemsHTML = entry.items.map(item => `
-            <div class="flex justify-between text-sm py-1 border-b last:border-none">
-              <span>${item.product} × ${item.sold}</span>
-              <span class="font-medium text-green-600">R${item.moneyMade}</span>
-            </div>
-          `).join("");
-        } else {
-          itemsHTML = `<p class="text-gray-400 text-sm py-2">No products sold this day</p>`;
-        }
+    container.innerHTML = "";
 
-        const card = document.createElement("div");
-        card.className = "bg-white rounded-3xl shadow-lg overflow-hidden card";
-        card.innerHTML = `
-          <div class="px-6 py-5 flex justify-between items-baseline border-b">
-            <div>
-              <span class="font-semibold text-lg">${entry.timestamp}</span>
-            </div>
-            <div class="text-right">
-              <span class="text-green-600 text-3xl font-bold">R${entry.totalMoney}</span>
-            </div>
+    if (historyData.length === 0) {
+      emptyMsg.classList.remove("hidden");
+      return;
+    }
+
+    emptyMsg.classList.add("hidden");
+
+    historyData.forEach(entry => {
+      let itemsHTML = "";
+
+      if (entry.items && entry.items.length > 0) {
+        itemsHTML = entry.items.map(item => `
+          <div class="flex justify-between text-sm py-1 border-b last:border-none">
+            <span>${item.product} × ${item.sold}</span>
+            <span class="font-medium text-green-600">R${item.moneyMade}</span>
           </div>
-          <details class="px-6 py-4">
-            <summary class="cursor-pointer text-blue-600 font-medium flex items-center justify-between">
-              <span>Products sold this day</span>
-              <span class="text-xl leading-none">+</span>
-            </summary>
-            <div class="mt-4 space-y-1">
-              ${itemsHTML}
-            </div>
-          </details>
-        `;
-        container.appendChild(card);
-      });
-    }
+        `).join("");
+      } else {
+        itemsHTML = `<p class="text-gray-400 text-sm py-2">No products sold this day</p>`;
+      }
 
-    window.refreshHistory = () => {
-      loadHistory();
-    };
+      const card = document.createElement("div");
+      card.className = "bg-white rounded-3xl shadow-lg overflow-hidden card";
 
-    // Initial load
-    loadHistory();
-  </script>
-</body>
-</html>
+      card.innerHTML = `
+        <div class="px-6 py-5 flex justify-between items-baseline border-b">
+          <div>
+            <span class="font-semibold text-lg">${entry.timestamp}</span>
+          </div>
+          <div class="text-right">
+            <span class="text-green-600 text-3xl font-bold">
+              R${entry.totalMoney}
+            </span>
+          </div>
+        </div>
+
+        <details class="px-6 py-4">
+          <summary class="cursor-pointer text-blue-600 font-medium flex items-center justify-between">
+            <span>Products sold this day</span>
+            <span class="text-xl leading-none">+</span>
+          </summary>
+
+          <div class="mt-4 space-y-1">
+            ${itemsHTML}
+          </div>
+        </details>
+      `;
+
+      container.appendChild(card);
+    });
+  }
+
+  window.refreshHistory = () => loadHistory();
+
+  // ==================== INIT ====================
+  loadHistory();
+</script>
