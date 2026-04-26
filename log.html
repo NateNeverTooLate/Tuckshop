@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profit Log</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+<div class="max-w-5xl mx-auto p-6">
+
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">💰 Profit Log System</h1>
+
+    <div class="flex gap-3">
+      <a href="history.html" class="px-4 py-2 bg-gray-700 text-white rounded-xl">← History</a>
+      <button onclick="runAlgorithm()" class="px-4 py-2 bg-green-600 text-white rounded-xl">
+        Run Algorithm
+      </button>
+    </div>
+  </div>
+
+  <div id="logContainer" class="space-y-4"></div>
+
+</div>
+
+<script>
+
+const API = "/api";
+
+let history = [];
+let logs = [];
+
+async function load() {
+  history = await fetch(`${API}/get?file=sales-history.json`).then(r => r.json()).catch(()=>[]);
+  logs = await fetch(`${API}/get?file=profit-log.json`).then(r => r.json()).catch(()=>[]);
+  render();
+}
+
+function render() {
+  const el = document.getElementById("logContainer");
+  el.innerHTML = "";
+
+  logs.forEach((l, index) => {
+
+    el.innerHTML += `
+      <div class="bg-white p-4 rounded-xl shadow">
+
+        <div class="flex justify-between">
+          <div class="font-bold">${l.timestamp}</div>
+          <button onclick="deleteLog(${index})" class="text-red-500">Delete</button>
+        </div>
+
+        <div class="mt-2 text-green-600 font-semibold">
+          Reserve: R${l.reserve}
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 mt-2">
+          <div class="bg-gray-100 p-2 rounded">
+            Nathan: R${l.nathan}
+          </div>
+          <div class="bg-gray-100 p-2 rounded">
+            Tobie: R${l.tobie}
+          </div>
+          <div class="bg-gray-100 p-2 rounded">
+            Kian: R${l.kian}
+          </div>
+        </div>
+
+      </div>
+    `;
+  });
+}
+
+window.runAlgorithm = async () => {
+
+  logs = [];
+
+  history.forEach(h => {
+
+    const total = h.totalMoney || 0;
+
+    const reserve = total / 2;
+    const profitPool = total - reserve;
+
+    const share = Math.floor(profitPool / 3);
+    const remainder = profitPool - (share * 3);
+
+    logs.push({
+      timestamp: h.timestamp,
+      reserve: +(reserve + remainder).toFixed(2),
+      nathan: share,
+      tobie: share,
+      kian: share
+    });
+
+  });
+
+  await fetch(`${API}/update`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      file: "profit-log.json",
+      content: logs
+    })
+  });
+
+  render();
+  alert("Algorithm complete");
+};
+
+window.deleteLog = async (index) => {
+  if (!confirm("Delete log?")) return;
+
+  logs.splice(index, 1);
+
+  await fetch(`${API}/update`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      file: "profit-log.json",
+      content: logs
+    })
+  });
+
+  render();
+};
+
+load();
+
+</script>
+
+</body>
+</html>
