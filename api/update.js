@@ -74,3 +74,5 @@ export default async function handler(req, res) {
     res.status(500).json({ error: error.message });
   }
 }
+console.log("TOKEN EXISTS:", !!process.env.GITHUB_TOKEN);
+console.log("TOKEN LENGTH:", process.env.GITHUB_TOKEN?.length);
