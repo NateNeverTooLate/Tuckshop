@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 export const config = {
   runtime: "nodejs"
 };
@@ -8,6 +7,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
 
   const token = process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    return res.status(500).json({ error: "Missing GitHub token" });
+  }
+
   const owner = "NateNeverTooLate";
   const repo = "Tuckshop";
   const branch = "main";
@@ -41,8 +45,8 @@ export default async function handler(req, res) {
     const body = {
       message:
         filePath === "tuck.json"
-          ? "Update tuckshop inventory"
-          : "Add sales history",
+          ? "Update inventory"
+          : "Update sales history",
       content: encodedContent,
       branch
     };
@@ -54,7 +58,7 @@ export default async function handler(req, res) {
       {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `token ${token}`,
           Accept: "application/vnd.github+json",
           "Content-Type": "application/json"
         },
@@ -65,17 +69,13 @@ export default async function handler(req, res) {
     const result = await response.json();
 
     if (!response.ok) {
-      console.log("TOKEN EXISTS:", !!process.env.GITHUB_TOKEN);
-console.log("TOKEN LENGTH:", process.env.GITHUB_TOKEN?.length);
-console.log("TOKEN START:", process.env.GITHUB_TOKEN?.slice(0, 10));
       throw new Error(result.message || "GitHub update failed");
     }
 
     res.status(200).json({ success: true });
+
   } catch (error) {
     console.error("UPDATE ERROR:", error);
     res.status(500).json({ error: error.message });
   }
 }
-console.log("TOKEN EXISTS:", !!process.env.GITHUB_TOKEN);
-console.log("TOKEN LENGTH:", process.env.GITHUB_TOKEN?.length);
