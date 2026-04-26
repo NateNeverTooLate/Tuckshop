@@ -22,7 +22,7 @@ export default async function handler(req, res) {
       `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`,
       {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `token ${token}`,
           Accept: "application/vnd.github+json"
         }
       }
