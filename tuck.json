@@ -94,13 +94,5 @@
     "sellPrice": 2,
     "soldToday": 0,
     "moneyMadeToday": 0
-  },
-  {
-    "id": 13,
-    "product": "test",
-    "stock": 0,
-    "sellPrice": 10,
-    "soldToday": 0,
-    "moneyMadeToday": 120
   }
 ]
