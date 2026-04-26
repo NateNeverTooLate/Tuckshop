@@ -1,4 +1,43 @@
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tuckshop Sales History</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    @media (max-width: 640px) {
+      .card { padding: 16px; }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="max-w-4xl mx-auto p-4 sm:p-6">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">📜 Sales History</h1>
+      <div class="flex gap-3">
+        <a href="index.html"
+           class="px-6 py-3 bg-gray-700 text-white rounded-2xl hover:bg-gray-800 text-sm font-medium flex items-center gap-2">
+          ← Back to Inventory
+        </a>
+        <button onclick="refreshHistory()" 
+                class="px-6 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 text-sm font-medium">
+          🔄 Refresh
+        </button>
+      </div>
+    </div>
+
+    <div id="historyContainer" class="space-y-6"></div>
+
+    <p id="emptyMessage" class="text-center text-gray-400 py-12 hidden">
+      No sales recorded yet.<br>Run the algorithm on the main page to start saving daily records.
+    </p>
+
+    <p class="text-center text-xs text-gray-400 mt-12">All history is saved permanently on GitHub</p>
+  </div>
+
+ <script>
   // ==================== CONFIG ====================
   const API_BASE = "/api";
   const HISTORY_FILE = "sales-history.json";
@@ -89,3 +128,7 @@
   // ==================== INIT ====================
   loadHistory();
 </script>
+</body>
+</html>
+
+update the history page with the needed changes
