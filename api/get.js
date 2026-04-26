@@ -1,3 +1,4 @@
+import fetch from "node-fetch";
 export default async function handler(req, res) {
   const token = process.env.GITHUB_TOKEN;
   const owner = "NateNeverTooLate";
