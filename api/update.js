@@ -65,6 +65,9 @@ export default async function handler(req, res) {
     const result = await response.json();
 
     if (!response.ok) {
+      console.log("TOKEN EXISTS:", !!process.env.GITHUB_TOKEN);
+console.log("TOKEN LENGTH:", process.env.GITHUB_TOKEN?.length);
+console.log("TOKEN START:", process.env.GITHUB_TOKEN?.slice(0, 10));
       throw new Error(result.message || "GitHub update failed");
     }
 
