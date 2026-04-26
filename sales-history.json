@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "timestamp": "26 Apr 2026, 12:02",
+    "totalMoney": 120,
+    "items": [
+      {
+        "product": "test",
+        "sold": 12,
+        "moneyMade": 120
+      }
+    ]
+  }
+]
