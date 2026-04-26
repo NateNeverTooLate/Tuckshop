@@ -100,7 +100,7 @@
     "product": "test",
     "stock": 12,
     "sellPrice": 10,
-    "soldToday": 5,
+    "soldToday": 6,
     "moneyMadeToday": 0
   }
 ]
