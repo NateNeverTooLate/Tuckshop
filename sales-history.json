@@ -1,16 +1,5 @@
 [
   {
-    "timestamp": "26 Apr 2026, 11:14",
-    "totalMoney": 40,
-    "items": [
-      {
-        "product": "test",
-        "sold": 4,
-        "moneyMade": 40
-      }
-    ]
-  },
-  {
     "timestamp": "26 Apr 2026, 10:16",
     "totalMoney": 60,
     "items": [
