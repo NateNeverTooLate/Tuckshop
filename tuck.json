@@ -2,7 +2,7 @@
   {
     "id": 1,
     "product": "Switch",
-    "stock": 10,
+    "stock": 13,
     "sellPrice": 15,
     "soldToday": 0,
     "moneyMadeToday": 30
@@ -10,7 +10,7 @@
   {
     "id": 2,
     "product": "Dragon",
-    "stock": 3,
+    "stock": 11,
     "sellPrice": 15,
     "soldToday": 0,
     "moneyMadeToday": 0
@@ -18,7 +18,7 @@
   {
     "id": 3,
     "product": "Kingsley",
-    "stock": 19,
+    "stock": 13,
     "sellPrice": 10,
     "soldToday": 0,
     "moneyMadeToday": 10
@@ -26,7 +26,7 @@
   {
     "id": 4,
     "product": "Cheetos",
-    "stock": 6,
+    "stock": 4,
     "sellPrice": 8,
     "soldToday": 0,
     "moneyMadeToday": 0
@@ -82,7 +82,7 @@
   {
     "id": 11,
     "product": "Papita",
-    "stock": 15,
+    "stock": 5,
     "sellPrice": 8,
     "soldToday": 0,
     "moneyMadeToday": 8
