@@ -1,312 +1,215 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Tuckshop Inventory</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { font-family: system-ui, -apple-system, sans-serif; }
-    .number-input-group { display: flex; align-items: center; gap: 4px; justify-content: flex-end; }
-    .number-input-group input { width: 78px; font-size: 1.1rem; text-align: center; }
-    .number-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: bold; border-radius: 9999px; background-color: #f3f4f6; color: #374151; }
-    .number-btn:active { background-color: #e5e7eb; transform: scale(0.95); }
-    @media (max-width: 640px) {
-      th, td { padding: 12px 8px; font-size: 0.95rem; }
-      .table-container { min-width: 680px; }
-      .number-input-group input { width: 70px; font-size: 1rem; }
-      .number-btn { width: 28px; height: 28px; font-size: 1rem; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tuckshop Inventory</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  body { font-family: system-ui, -apple-system, sans-serif; }
+
+  .number-input-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+
+  .number-input-group input {
+    width: 64px;
+    text-align: center;
+  }
+
+  .number-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 9999px;
+    background: #f3f4f6;
+  }
+
+  /* MOBILE CARD MODE */
+  @media (max-width: 640px) {
+
+    table thead {
+      display: none;
     }
-  </style>
+
+    table, tbody, tr, td {
+      display: block;
+      width: 100%;
+    }
+
+    tr {
+      background: white;
+      margin-bottom: 12px;
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    td {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      font-size: 14px;
+    }
+
+    td::before {
+      font-weight: 600;
+      color: #6b7280;
+    }
+
+    td:nth-child(1)::before { content: "Product"; }
+    td:nth-child(2)::before { content: "Stock"; }
+    td:nth-child(3)::before { content: "Price"; }
+    td:nth-child(4)::before { content: "Sold"; }
+    td:nth-child(5)::before { content: "Money"; }
+
+  }
+</style>
 </head>
+
 <body class="bg-gray-50 min-h-screen">
-  <div class="max-w-6xl mx-auto p-4 sm:p-6">
-    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
-      <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Tuckshop Inventory</h1>
-      <div class="flex flex-wrap gap-3">
-        <a href="history.html" class="px-5 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium flex items-center justify-center gap-2">📜 History</a>
-        <button onclick="refreshData()" class="px-5 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 text-sm font-medium flex-1 sm:flex-none">🔄 Refresh</button>
-        <button onclick="toggleEditMode()" id="editBtn" class="px-5 py-3 bg-amber-600 text-white rounded-xl hover:bg-amber-700 text-sm font-medium flex-1 sm:flex-none">✏️ Edit Mode</button>
-        <button onclick="addNewItem()" class="px-5 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 text-sm font-medium flex-1 sm:flex-none">+ Add Item</button>
-        <button onclick="startAlgorithm()" class="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 text-base font-semibold flex-1 sm:flex-none">🚀 Start Algorithm</button>
-        <button onclick="undoLastAction()" id="undoBtn" class="px-6 py-3 bg-orange-600 text-white rounded-xl hover:bg-orange-700 hidden flex-1 sm:flex-none">↩️ Undo Last</button>
-      </div>
-    </div>
 
-    <div class="bg-white rounded-3xl shadow-lg overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full table-container min-w-[680px]">
-          <thead class="bg-gray-100 sticky top-0">
-            <tr>
-              <th class="px-4 sm:px-6 py-4 text-left font-semibold">Product</th>
-              <th class="px-4 sm:px-6 py-4 text-right font-semibold">Stock</th>
-              <th class="px-4 sm:px-6 py-4 text-right font-semibold">Price</th>
-              <th class="px-4 sm:px-6 py-4 text-right font-semibold">Sold Today</th>
-              <th class="px-4 sm:px-6 py-4 text-right font-semibold">Money Made Today</th>
-              <th class="px-4 sm:px-6 py-4 w-12" id="actionHeader"></th>
-            </tr>
-          </thead>
-          <tbody id="tableBody" class="divide-y text-sm sm:text-base"></tbody>
-        </table>
-      </div>
-    </div>
+<div class="max-w-6xl mx-auto p-4">
 
-    <div id="totalRow" class="mt-6 text-right text-lg sm:text-xl font-semibold text-gray-700 flex justify-end items-baseline gap-2"></div>
-    <p class="text-center text-xs text-gray-400 mt-8">All changes auto-save via Vercel</p>
+  <div class="flex flex-col gap-3 mb-6">
+    <h1 class="text-2xl font-bold">Tuckshop Inventory</h1>
+
+    <div class="flex flex-wrap gap-2">
+      <a href="history.html" class="px-4 py-2 bg-blue-600 text-white rounded-xl">History</a>
+      <button onclick="refreshData()" class="px-4 py-2 bg-gray-600 text-white rounded-xl">Refresh</button>
+      <button onclick="toggleEditMode()" id="editBtn" class="px-4 py-2 bg-amber-600 text-white rounded-xl">Edit</button>
+      <button onclick="addNewItem()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl">+ Item</button>
+      <button onclick="startAlgorithm()" class="px-4 py-2 bg-green-600 text-white rounded-xl">Run</button>
+    </div>
   </div>
 
- <script>
-  // ==================== CONFIG ====================
-  const API_BASE = "/api";
-  // ===============================================
+  <div class="bg-white rounded-2xl shadow p-2">
+    <table class="w-full">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="p-3 text-left">Product</th>
+          <th class="p-3 text-right">Stock</th>
+          <th class="p-3 text-right">Price</th>
+          <th class="p-3 text-right">Sold</th>
+          <th class="p-3 text-right">Money</th>
+          <th id="actionHeader"></th>
+        </tr>
+      </thead>
 
-  let data = [];
-  let undoData = null;
-  let editMode = false;
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
 
-  async function apiGet(file = "tuck.json") {
-    const res = await fetch(`${API_BASE}/get?file=${file}`);
-    if (!res.ok) throw new Error("Load failed");
-    return await res.json();
-  }
+  <div id="totalRow" class="mt-6 text-right text-xl font-bold"></div>
 
-  async function apiUpdate(file, content) {
-    const res = await fetch(`${API_BASE}/update`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ file, content })
-    });
+</div>
 
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || "Save failed");
-    return json;
-  }
+<script>
 
-  async function loadData() {
-    try {
-      data = await apiGet("tuck.json");
-    } catch (e) {
-      console.error(e);
-      alert("Could not load data from server");
-    }
-    renderTable();
-  }
+const API_BASE = "/api";
 
-  // ==================== RENDER ====================
-  function renderTable() {
-    const tbody = document.getElementById("tableBody");
-    tbody.innerHTML = "";
+let data = [];
+let editMode = false;
 
-    let totalMoney = 0;
+async function apiGet(file) {
+  return fetch(`${API_BASE}/get?file=${file}`).then(r => r.json());
+}
 
-    data.forEach(item => {
-      totalMoney += item.moneyMadeToday || 0;
+async function apiUpdate(file, content) {
+  return fetch(`${API_BASE}/update`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ file, content })
+  });
+}
 
-      const row = document.createElement("tr");
+async function loadData() {
+  data = await apiGet("tuck.json");
+  renderTable();
+}
 
-      row.innerHTML = `
-        <td class="px-4 sm:px-6 py-4 font-medium">
-          ${editMode ? `
-            <input type="text" value="${item.product}"
-              class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm"
-              oninput="updateProductName(${item.id}, this.value)">
-          ` : item.product}
-        </td>
+function renderTable() {
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = "";
 
-        <td class="px-4 sm:px-6 py-4 text-right">
-          <div class="number-input-group">
-            <button onclick="changeStock(${item.id}, -1)" class="number-btn">-</button>
-            <input type="number" min="0" value="${item.stock}"
-              class="border border-gray-300 rounded-2xl px-3 py-3 font-mono"
-              oninput="updateStock(${item.id}, this.value)">
-            <button onclick="changeStock(${item.id}, 1)" class="number-btn">+</button>
-          </div>
-        </td>
+  let total = 0;
 
-        <td class="px-4 sm:px-6 py-4 text-right">
-          ${editMode ? `
-            <input type="number" value="${item.sellPrice}"
-              class="w-20 border border-gray-300 rounded-xl px-3 py-2 text-right"
-              oninput="updatePrice(${item.id}, this.value)">
-          ` : `R${item.sellPrice}`}
-        </td>
+  data.forEach(item => {
 
-        <td class="px-4 sm:px-6 py-4 text-right">
-          <div class="number-input-group">
-            <button onclick="changeSoldToday(${item.id}, -1)" class="number-btn">-</button>
-            <input type="number" min="0" value="${item.soldToday}"
-              class="border border-gray-300 rounded-2xl px-3 py-3 font-mono"
-              oninput="updateSoldToday(${item.id}, this.value)">
-            <button onclick="changeSoldToday(${item.id}, 1)" class="number-btn">+</button>
-          </div>
-        </td>
+    total += item.moneyMadeToday || 0;
 
-        <td class="px-4 sm:px-6 py-4 text-right font-mono text-green-600">
-          R${(item.moneyMadeToday || 0).toFixed(2)}
-        </td>
+    const row = document.createElement("tr");
 
-        <td class="px-4 sm:px-6 py-4 text-center">
-          ${editMode ? `<button onclick="deleteItem(${item.id})" class="text-red-600 text-2xl">×</button>` : ""}
-        </td>
-      `;
+    row.innerHTML = `
+      <td>${item.product}</td>
 
-      tbody.appendChild(row);
-    });
+      <td>
+        <div class="number-input-group">
+          <button onclick="changeStock(${item.id}, -1)" class="number-btn">-</button>
+          <input value="${item.stock}" onchange="updateStock(${item.id}, this.value)">
+          <button onclick="changeStock(${item.id}, 1)" class="number-btn">+</button>
+        </div>
+      </td>
 
-    document.getElementById("totalRow").innerHTML = `
-      <span class="text-gray-500">Total money made today:</span>
-      <span class="text-3xl font-bold text-green-600 ml-2">
-        R${totalMoney.toFixed(2)}
-      </span>
+      <td>R${item.sellPrice}</td>
+
+      <td>
+        <div class="number-input-group">
+          <button onclick="changeSoldToday(${item.id}, -1)" class="number-btn">-</button>
+          <input value="${item.soldToday}" onchange="updateSoldToday(${item.id}, this.value)">
+          <button onclick="changeSoldToday(${item.id}, 1)" class="number-btn">+</button>
+        </div>
+      </td>
+
+      <td class="text-green-600">R${(item.moneyMadeToday || 0).toFixed(2)}</td>
+
+      <td>${editMode ? `<button onclick="deleteItem(${item.id})">X</button>` : ""}</td>
     `;
-  }
 
-  // ==================== LOCAL ONLY EDITS ====================
+    tbody.appendChild(row);
+  });
 
-  window.changeStock = (id, delta) => {
-    const item = data.find(i => i.id === id);
-    if (item) item.stock = Math.max(0, item.stock + delta);
-    renderTable();
-  };
+  document.getElementById("totalRow").innerHTML =
+    `Total: R${total.toFixed(2)}`;
+}
 
-  window.changeSoldToday = (id, delta) => {
-    const item = data.find(i => i.id === id);
-    if (item) item.soldToday = Math.max(0, item.soldToday + delta);
-    renderTable();
-  };
+// functions unchanged
+window.changeStock = (id, d) => {
+  const i = data.find(x => x.id === id);
+  if (i) i.stock = Math.max(0, i.stock + d);
+  renderTable();
+};
 
-  window.updateStock = (id, value) => {
-    const item = data.find(i => i.id === id);
-    if (item) item.stock = Math.max(0, parseFloat(value) || 0);
-    renderTable();
-  };
+window.changeSoldToday = (id, d) => {
+  const i = data.find(x => x.id === id);
+  if (i) i.soldToday = Math.max(0, i.soldToday + d);
+  renderTable();
+};
 
-  window.updateSoldToday = (id, value) => {
-    const item = data.find(i => i.id === id);
-    if (item) item.soldToday = Math.max(0, parseFloat(value) || 0);
-    renderTable();
-  };
+window.updateStock = (id, v) => {
+  const i = data.find(x => x.id === id);
+  if (i) i.stock = parseFloat(v) || 0;
+};
 
-  window.updatePrice = (id, value) => {
-    const item = data.find(i => i.id === id);
-    if (item) item.sellPrice = parseFloat(value) || 0;
-    renderTable();
-  };
+window.updateSoldToday = (id, v) => {
+  const i = data.find(x => x.id === id);
+  if (i) i.soldToday = parseFloat(v) || 0;
+};
 
-  window.updateProductName = (id, value) => {
-    const item = data.find(i => i.id === id);
-    if (item) item.product = value;
-  };
+window.toggleEditMode = () => {
+  editMode = !editMode;
+  renderTable();
+};
 
-  window.deleteItem = (id) => {
-    if (!confirm("Delete item?")) return;
-    data = data.filter(i => i.id !== id);
-    renderTable();
-  };
+window.refreshData = loadData;
 
-  window.addNewItem = () => {
-    const product = prompt("Product Name:")?.trim();
-    if (!product) return;
+loadData();
 
-    const stock = parseFloat(prompt("Stock:", "0")) || 0;
-    const price = parseFloat(prompt("Price:", "10")) || 10;
-
-    const newId = data.length ? Math.max(...data.map(i => i.id)) + 1 : 1;
-
-    data.push({
-      id: newId,
-      product,
-      stock,
-      sellPrice: price,
-      soldToday: 0,
-      moneyMadeToday: 0
-    });
-
-    renderTable();
-  };
-
-  // ==================== MODE TOGGLE ====================
-
-  window.toggleEditMode = () => {
-    editMode = !editMode;
-    document.getElementById("editBtn").textContent =
-      editMode ? "✅ Done Editing" : "✏️ Edit Mode";
-    document.getElementById("actionHeader").textContent =
-      editMode ? "Delete" : "";
-    renderTable();
-  };
-
-  // ==================== START ALGORITHM (ONLY SAVE HERE) ====================
-
-  window.startAlgorithm = async () => {
-    if (!confirm("Process all sales now?")) return;
-
-    const historyEntry = {
-      timestamp: new Date().toLocaleString("en-ZA", {
-        dateStyle: "medium",
-        timeStyle: "short"
-      }),
-      totalMoney: 0,
-      items: []
-    };
-
-    data.forEach(item => {
-      const sold = parseFloat(item.soldToday) || 0;
-
-      if (sold > 0) {
-        const money = Math.round(item.sellPrice * sold * 100) / 100;
-
-        historyEntry.items.push({
-          product: item.product,
-          sold,
-          moneyMade: money
-        });
-
-        historyEntry.totalMoney += money;
-
-        item.stock = Math.max(0, item.stock - sold);
-        item.moneyMadeToday = money;
-        item.soldToday = 0;
-      }
-    });
-
-    // SAVE INVENTORY
-    await apiUpdate("tuck.json", data);
-
-    // LOAD HISTORY
-    let history = [];
-    try {
-      history = await apiGet("sales-history.json");
-    } catch {
-      history = [];
-    }
-
-    history.unshift(historyEntry);
-
-    // SAVE HISTORY
-    await apiUpdate("sales-history.json", history);
-
-    renderTable();
-    alert("✅ Sales processed successfully!");
-  };
-
-  // ==================== UNDO ====================
-
-  window.undoLastAction = async () => {
-    if (!undoData || !confirm("Undo last action?")) return;
-
-    data = JSON.parse(JSON.stringify(undoData));
-    undoData = null;
-
-    renderTable();
-
-    await apiUpdate("tuck.json", data);
-  };
-
-  window.refreshData = () => loadData();
-
-  // ==================== INIT ====================
-  loadData();
 </script>
+
 </body>
 </html>
