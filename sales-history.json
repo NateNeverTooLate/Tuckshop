@@ -1,5 +1,21 @@
 [
   {
+    "timestamp": "28 Apr 2026, 09:32",
+    "totalMoney": 38,
+    "items": [
+      {
+        "product": "Switch",
+        "sold": 2,
+        "moneyMade": 30
+      },
+      {
+        "product": "Go Slos",
+        "sold": 1,
+        "moneyMade": 8
+      }
+    ]
+  },
+  {
     "timestamp": "26 Apr 2026, 12:03",
     "totalMoney": 0,
     "items": []
