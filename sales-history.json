@@ -1,5 +1,26 @@
 [
   {
+    "timestamp": "28 Apr 2026, 13:16",
+    "totalMoney": 26,
+    "items": [
+      {
+        "product": "Kingsley",
+        "sold": 1,
+        "moneyMade": 10
+      },
+      {
+        "product": "Go Slos",
+        "sold": 1,
+        "moneyMade": 8
+      },
+      {
+        "product": "Papita",
+        "sold": 1,
+        "moneyMade": 8
+      }
+    ]
+  },
+  {
     "timestamp": "28 Apr 2026, 11:08",
     "totalMoney": 66,
     "items": [
