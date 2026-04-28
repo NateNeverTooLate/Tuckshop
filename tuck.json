@@ -18,7 +18,7 @@
   {
     "id": 3,
     "product": "Kingsley",
-    "stock": 13,
+    "stock": 12,
     "sellPrice": 10,
     "soldToday": 0,
     "moneyMadeToday": 10
@@ -82,7 +82,7 @@
   {
     "id": 11,
     "product": "Papita",
-    "stock": 5,
+    "stock": 4,
     "sellPrice": 8,
     "soldToday": 0,
     "moneyMadeToday": 8
@@ -90,9 +90,9 @@
   {
     "id": 12,
     "product": "Chocolates",
-    "stock": 108,
+    "stock": 107,
     "sellPrice": 2,
     "soldToday": 0,
-    "moneyMadeToday": 0
+    "moneyMadeToday": 2
   }
 ]
