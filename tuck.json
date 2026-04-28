@@ -2,7 +2,7 @@
   {
     "id": 1,
     "product": "Switch",
-    "stock": 12,
+    "stock": 10,
     "sellPrice": 15,
     "soldToday": 0,
     "moneyMadeToday": 30
@@ -66,10 +66,10 @@
   {
     "id": 9,
     "product": "Lollipops",
-    "stock": 125,
+    "stock": 123,
     "sellPrice": 2,
     "soldToday": 0,
-    "moneyMadeToday": 0
+    "moneyMadeToday": 4
   },
   {
     "id": 10,
@@ -82,10 +82,10 @@
   {
     "id": 11,
     "product": "Papita",
-    "stock": 20,
+    "stock": 16,
     "sellPrice": 8,
     "soldToday": 0,
-    "moneyMadeToday": 0
+    "moneyMadeToday": 32
   },
   {
     "id": 12,
