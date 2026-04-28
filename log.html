@@ -43,8 +43,12 @@ function render() {
   const el = document.getElementById("logContainer");
   el.innerHTML = "";
 
-  logs.forEach((l, index) => {
+  if (logs.length === 0) {
+    el.innerHTML = `<div class="text-gray-500">No data yet. Run the algorithm.</div>`;
+    return;
+  }
 
+  logs.forEach((l, index) => {
     el.innerHTML += `
       <div class="bg-white p-4 rounded-xl shadow">
 
@@ -76,28 +80,30 @@ function render() {
 
 window.runAlgorithm = async () => {
 
-  logs = [];
+  // Step 1: Combine all sales
+  let grandTotal = 0;
 
   history.forEach(h => {
-
-    const total = h.totalMoney || 0;
-
-    const reserve = total / 2;
-    const profitPool = total - reserve;
-
-    const share = Math.floor(profitPool / 3);
-    const remainder = profitPool - (share * 3);
-
-    logs.push({
-      timestamp: h.timestamp,
-      reserve: +(reserve + remainder).toFixed(2),
-      nathan: share,
-      tobie: share,
-      kian: share
-    });
-
+    grandTotal += h.totalMoney || 0;
   });
 
+  // Step 2: Apply algorithm once
+  const reserve = grandTotal / 2;
+  const profitPool = grandTotal - reserve;
+
+  const share = Math.floor(profitPool / 3);
+  const remainder = profitPool - (share * 3);
+
+  // Step 3: Store ONE combined result
+  logs = [{
+    timestamp: new Date().toLocaleString(),
+    reserve: +(reserve + remainder).toFixed(2),
+    nathan: share,
+    tobie: share,
+    kian: share
+  }];
+
+  // Save
   await fetch(`${API}/update`, {
     method: "POST",
     headers: {"Content-Type":"application/json"},
@@ -108,7 +114,7 @@ window.runAlgorithm = async () => {
   });
 
   render();
-  alert("Algorithm complete");
+  alert("Combined algorithm complete");
 };
 
 window.deleteLog = async (index) => {
