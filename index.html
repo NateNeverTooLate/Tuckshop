@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -70,7 +69,6 @@
 
   }
 </style>
-
 </head>
 
 <body class="bg-gray-50 min-h-screen">
@@ -80,16 +78,13 @@
   <div class="flex flex-col gap-3 mb-6">
     <h1 class="text-2xl font-bold">Tuckshop Inventory</h1>
 
-```
-<div class="flex flex-wrap gap-2">
-  <a href="history.html" class="px-4 py-2 bg-blue-600 text-white rounded-xl">History</a>
-  <button onclick="refreshData()" class="px-4 py-2 bg-gray-600 text-white rounded-xl">Refresh</button>
-  <button onclick="toggleEditMode()" id="editBtn" class="px-4 py-2 bg-amber-600 text-white rounded-xl">Edit</button>
-  <button onclick="addNewItem()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl">+ Item</button>
-  <button onclick="startAlgorithm()" class="px-4 py-2 bg-green-600 text-white rounded-xl">Run</button>
-</div>
-```
-
+    <div class="flex flex-wrap gap-2">
+      <a href="history.html" class="px-4 py-2 bg-blue-600 text-white rounded-xl">History</a>
+      <button onclick="refreshData()" class="px-4 py-2 bg-gray-600 text-white rounded-xl">Refresh</button>
+      <button onclick="toggleEditMode()" id="editBtn" class="px-4 py-2 bg-amber-600 text-white rounded-xl">Edit</button>
+      <button onclick="addNewItem()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl">+ Item</button>
+      <button onclick="startAlgorithm()" class="px-4 py-2 bg-green-600 text-white rounded-xl">Run</button>
+    </div>
   </div>
 
   <div class="bg-white rounded-2xl shadow p-2">
@@ -105,11 +100,8 @@
         </tr>
       </thead>
 
-```
-  <tbody id="tableBody"></tbody>
-</table>
-```
-
+      <tbody id="tableBody"></tbody>
+    </table>
   </div>
 
   <div id="totalRow" class="mt-6 text-right text-xl font-bold"></div>
@@ -123,38 +115,22 @@ const API_BASE = "/api";
 let data = [];
 let editMode = false;
 
-/* ---------------- STORAGE ---------------- */
-
-function saveLocal() {
-  localStorage.setItem("tuck_data", JSON.stringify(data));
-}
-
-function loadLocal() {
-  const local = localStorage.getItem("tuck_data");
-  return local ? JSON.parse(local) : null;
-}
-
-/* ---------------- API ---------------- */
-
 async function apiGet(file) {
   return fetch(`${API_BASE}/get?file=${file}`).then(r => r.json());
 }
 
-/* ---------------- LOAD ---------------- */
-
-async function loadData() {
-  const local = loadLocal();
-
-  if (local) {
-    data = local;
-  } else {
-    data = await apiGet("tuck.json");
-  }
-
-  renderTable();
+async function apiUpdate(file, content) {
+  return fetch(`${API_BASE}/update`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ file, content })
+  });
 }
 
-/* ---------------- RENDER ---------------- */
+async function loadData() {
+  data = await apiGet("tuck.json");
+  renderTable();
+}
 
 function renderTable() {
   const tbody = document.getElementById("tableBody");
@@ -164,8 +140,7 @@ function renderTable() {
 
   data.forEach(item => {
 
-    const money = (item.soldToday || 0) * (item.sellPrice || 0);
-    total += money;
+    total += item.moneyMadeToday || 0;
 
     const row = document.createElement("tr");
 
@@ -190,7 +165,7 @@ function renderTable() {
         </div>
       </td>
 
-      <td class="text-green-600">R${money.toFixed(2)}</td>
+      <td class="text-green-600">R${(item.moneyMadeToday || 0).toFixed(2)}</td>
 
       <td>${editMode ? `<button onclick="deleteItem(${item.id})">X</button>` : ""}</td>
     `;
@@ -202,52 +177,35 @@ function renderTable() {
     `Total: R${total.toFixed(2)}`;
 }
 
-/* ---------------- ACTIONS ---------------- */
-
+// functions unchanged
 window.changeStock = (id, d) => {
   const i = data.find(x => x.id === id);
   if (i) i.stock = Math.max(0, i.stock + d);
-  saveLocal();
   renderTable();
 };
 
 window.changeSoldToday = (id, d) => {
   const i = data.find(x => x.id === id);
   if (i) i.soldToday = Math.max(0, i.soldToday + d);
-  saveLocal();
   renderTable();
 };
 
 window.updateStock = (id, v) => {
   const i = data.find(x => x.id === id);
   if (i) i.stock = parseFloat(v) || 0;
-  saveLocal();
 };
 
 window.updateSoldToday = (id, v) => {
   const i = data.find(x => x.id === id);
   if (i) i.soldToday = parseFloat(v) || 0;
-  saveLocal();
 };
-
-/* ---------------- BUTTONS ---------------- */
 
 window.toggleEditMode = () => {
   editMode = !editMode;
   renderTable();
 };
 
-window.refreshData = () => {
-  localStorage.removeItem("tuck_data");
-  loadData();
-};
-
-window.startAlgorithm = () => {
-  // force recalculation (already automatic, but kept for button use)
-  renderTable();
-};
-
-/* ---------------- INIT ---------------- */
+window.refreshData = loadData;
 
 loadData();
 
