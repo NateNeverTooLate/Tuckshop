@@ -4,8 +4,8 @@
     "product": "Switch",
     "stock": 13,
     "sellPrice": 15,
-    "soldToday": 0,
-    "moneyMadeToday": 60
+    "soldToday": 1,
+    "moneyMadeToday": 0
   },
   {
     "id": 2,
