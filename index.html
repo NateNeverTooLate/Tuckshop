@@ -1,8 +1,10 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
 <title>Tuckshop Inventory</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
@@ -111,14 +113,13 @@
       <button
         id="refreshBtn"
         onclick="refreshData()"
-        class="px-4 py-2 bg-gray-600 text-white rounded-xl transition hover:bg-gray-700 active:scale-95"
+        class="px-4 py-2 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition active:scale-95"
       >
         Refresh
       </button>
 
       <button
         onclick="toggleEditMode()"
-        id="editBtn"
         class="px-4 py-2 bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition"
       >
         Edit
@@ -132,6 +133,7 @@
       </button>
 
       <button
+        id="runBtn"
         onclick="startAlgorithm()"
         class="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition"
       >
@@ -139,6 +141,7 @@
       </button>
 
     </div>
+
   </div>
 
   <div class="bg-white rounded-2xl shadow p-2 overflow-x-auto">
@@ -167,7 +170,9 @@
   <div
     id="totalRow"
     class="mt-6 text-right text-2xl font-bold text-green-700"
-  ></div>
+  >
+    Current Total: R0.00
+  </div>
 
 </div>
 
@@ -177,6 +182,7 @@ const API_BASE = "/api";
 
 let data = [];
 let editMode = false;
+let sessionTotal = 0;
 
 async function apiGet(file) {
 
@@ -227,7 +233,10 @@ async function saveData() {
 
 async function saveHistory(historyData) {
 
-  await apiUpdate("history.json", historyData);
+  await apiUpdate(
+    "sales-history.json",
+    historyData
+  );
 }
 
 async function loadData() {
@@ -253,11 +262,10 @@ function renderTable() {
 
   tbody.innerHTML = "";
 
-  let total = 0;
-
   data.forEach(item => {
 
-    total += item.moneyMadeToday || 0;
+    const liveMoney =
+      (item.soldToday || 0) * item.sellPrice;
 
     const row =
       document.createElement("tr");
@@ -329,7 +337,7 @@ function renderTable() {
       </td>
 
       <td class="text-green-600 font-semibold text-right">
-        R${(item.moneyMadeToday || 0).toFixed(2)}
+        R${liveMoney.toFixed(2)}
       </td>
 
       <td class="text-right">
@@ -354,7 +362,7 @@ function renderTable() {
   });
 
   document.getElementById("totalRow").innerHTML =
-    `Total Revenue: R${total.toFixed(2)}`;
+    `Current Total: R${sessionTotal.toFixed(2)}`;
 }
 
 window.changeStock = async (id, d) => {
@@ -445,9 +453,7 @@ window.addNewItem = async () => {
 
     sellPrice,
 
-    soldToday: 0,
-
-    moneyMadeToday: 0
+    soldToday: 0
   };
 
   data.push(newItem);
@@ -477,12 +483,13 @@ window.deleteItem = async (id) => {
 window.startAlgorithm = async () => {
 
   const runBtn =
-    document.querySelector(
-      'button[onclick="startAlgorithm()"]'
-    );
+    document.getElementById("runBtn");
 
   runBtn.innerText = "Processing...";
   runBtn.disabled = true;
+
+  // reset total for new run
+  sessionTotal = 0;
 
   let history =
     await apiGet("sales-history.json");
@@ -513,9 +520,6 @@ window.startAlgorithm = async () => {
       item.stock =
         Math.max(0, item.stock - sold);
 
-      item.moneyMadeToday =
-        (item.moneyMadeToday || 0) + money;
-
       session.items.push({
 
         product: item.product,
@@ -526,8 +530,11 @@ window.startAlgorithm = async () => {
       });
 
       session.total += money;
+
+      sessionTotal += money;
     }
 
+    // reset after run
     item.soldToday = 0;
   });
 
@@ -542,7 +549,9 @@ window.startAlgorithm = async () => {
   runBtn.innerText = "Run";
   runBtn.disabled = false;
 
-  alert("Sales processed successfully.");
+  alert(
+    `Sales processed.\nTotal: R${sessionTotal.toFixed(2)}`
+  );
 };
 
 loadData();
@@ -551,3 +560,4 @@ loadData();
 
 </body>
 </html>
+```
