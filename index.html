@@ -80,7 +80,13 @@
 
     <div class="flex flex-wrap gap-2">
       <a href="history.html" class="px-4 py-2 bg-blue-600 text-white rounded-xl">History</a>
-      <button onclick="refreshData()" class="px-4 py-2 bg-gray-600 text-white rounded-xl">Refresh</button>
+     <button
+  id="refreshBtn"
+  onclick="refreshData()"
+  class="px-4 py-2 bg-gray-600 text-white rounded-xl transition hover:bg-gray-700 active:scale-95"
+>
+  Refresh
+</button>
       <button onclick="toggleEditMode()" id="editBtn" class="px-4 py-2 bg-amber-600 text-white rounded-xl">Edit</button>
       <button onclick="addNewItem()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl">+ Item</button>
       <button onclick="startAlgorithm()" class="px-4 py-2 bg-green-600 text-white rounded-xl">Run</button>
@@ -116,117 +122,43 @@ let data = [];
 let editMode = false;
 
 async function apiGet(file) {
-  return fetch(`${API_BASE}/get?file=${file}`).then(r => r.json());
+
+  try {
+
+    const response = await fetch(`${API_BASE}/get?file=${file}`);
+
+    if (!response.ok) {
+      throw new Error("Failed to load");
+    }
+
+    return await response.json();
+
+  } catch (err) {
+
+    console.error(err);
+
+    return [];
+  }
 }
 
 async function apiUpdate(file, content) {
-  return fetch(`${API_BASE}/update`, {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ file, content })
-  });
-}
 
-async function loadData() {
-  data = await apiGet("tuck.json");
-  renderTable();
-}
+  try {
 
-function renderTable() {
-  const tbody = document.getElementById("tableBody");
-  tbody.innerHTML = "";
+    await fetch(`${API_BASE}/update`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        file,
+        content
+      })
+    });
 
-  let total = 0;
-
-  data.forEach(item => {
-
-    total += item.moneyMadeToday || 0;
-
-    const row = document.createElement("tr");
-
-    row.innerHTML = `
-      <td>${item.product}</td>
-
-      <td>
-        <div class="number-input-group">
-          <button onclick="changeStock(${item.id}, -1)" class="number-btn">-</button>
-          <input value="${item.stock}" onchange="updateStock(${item.id}, this.value)">
-          <button onclick="changeStock(${item.id}, 1)" class="number-btn">+</button>
-        </div>
-      </td>
-
-      <td>R${item.sellPrice}</td>
-
-      <td>
-        <div class="number-input-group">
-          <button onclick="changeSoldToday(${item.id}, -1)" class="number-btn">-</button>
-          <input value="${item.soldToday}" onchange="updateSoldToday(${item.id}, this.value)">
-          <button onclick="changeSoldToday(${item.id}, 1)" class="number-btn">+</button>
-        </div>
-      </td>
-
-      <td class="text-green-600">R${(item.moneyMadeToday || 0).toFixed(2)}</td>
-
-      <td>${editMode ? `<button onclick="deleteItem(${item.id})">X</button>` : ""}</td>
-    `;
-
-    tbody.appendChild(row);
-  });
-
-  document.getElementById("totalRow").innerHTML =
-    `Total: R${total.toFixed(2)}`;
-}
-
-// functions unchanged
-window.changeStock = (id, d) => {
-  const i = data.find(x => x.id === id);
-  if (i) i.stock = Math.max(0, i.stock + d);
-  renderTable();
-};
-
-window.changeSoldToday = (id, d) => {
-  const i = data.find(x => x.id === id);
-  if (i) i.soldToday = Math.max(0, i.soldToday + d);
-  renderTable();
-};
-
-window.updateStock = (id, v) => {
-  const i = data.find(x => x.id === id);
-  if (i) i.stock = parseFloat(v) || 0;
-};
-
-window.updateSoldToday = (id, v) => {
-  const i = data.find(x => x.id === id);
-  if (i) i.soldToday = parseFloat(v) || 0;
-};
-
-window.toggleEditMode = () => {
-  editMode = !editMode;
-  renderTable();
-};
-
-window.refreshData = loadData;
-
-loadData();
-
-</script>
-  <script>
-
-const API_BASE = "/api";
-
-let data = [];
-let editMode = false;
-
-async function apiGet(file) {
-  return fetch(`${API_BASE}/get?file=${file}`).then(r => r.json());
-}
-
-async function apiUpdate(file, content) {
-  return fetch(`${API_BASE}/update`, {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ file, content })
-  });
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 async function saveData() {
@@ -234,21 +166,38 @@ async function saveData() {
 }
 
 async function loadData() {
+
+  const refreshBtn = document.getElementById("refreshBtn");
+
+  if (refreshBtn) {
+    refreshBtn.innerText = "Refreshing...";
+    refreshBtn.disabled = true;
+  }
+
   data = await apiGet("tuck.json");
+
   renderTable();
+
+  if (refreshBtn) {
+    refreshBtn.innerText = "Refresh";
+    refreshBtn.disabled = false;
+  }
 }
 
 function renderTable() {
+
   const tbody = document.getElementById("tableBody");
+
   tbody.innerHTML = "";
 
   let total = 0;
 
   data.forEach(item => {
 
-    item.moneyMadeToday = (item.soldToday || 0) * (item.sellPrice || 0);
+    item.moneyMadeToday =
+      (item.soldToday || 0) * (item.sellPrice || 0);
 
-    total += item.moneyMadeToday || 0;
+    total += item.moneyMadeToday;
 
     const row = document.createElement("tr");
 
@@ -258,7 +207,13 @@ function renderTable() {
       <td>
         <div class="number-input-group">
           <button onclick="changeStock(${item.id}, -1)" class="number-btn">-</button>
-          <input value="${item.stock}" onchange="updateStock(${item.id}, this.value)">
+
+          <input
+            type="number"
+            value="${item.stock}"
+            onchange="updateStock(${item.id}, this.value)"
+          >
+
           <button onclick="changeStock(${item.id}, 1)" class="number-btn">+</button>
         </div>
       </td>
@@ -268,16 +223,30 @@ function renderTable() {
       <td>
         <div class="number-input-group">
           <button onclick="changeSoldToday(${item.id}, -1)" class="number-btn">-</button>
-          <input value="${item.soldToday}" onchange="updateSoldToday(${item.id}, this.value)">
+
+          <input
+            type="number"
+            value="${item.soldToday}"
+            onchange="updateSoldToday(${item.id}, this.value)"
+          >
+
           <button onclick="changeSoldToday(${item.id}, 1)" class="number-btn">+</button>
         </div>
       </td>
 
-      <td class="text-green-600">R${(item.moneyMadeToday || 0).toFixed(2)}</td>
+      <td class="text-green-600">
+        R${item.moneyMadeToday.toFixed(2)}
+      </td>
 
       <td>
-        ${editMode
-          ? `<button onclick="deleteItem(${item.id})" class="text-red-600 font-bold">X</button>`
+        ${
+          editMode
+          ? `<button
+                onclick="deleteItem(${item.id})"
+                class="text-red-600 font-bold"
+             >
+                X
+             </button>`
           : ""
         }
       </td>
@@ -291,51 +260,61 @@ function renderTable() {
 }
 
 window.changeStock = async (id, d) => {
-  const i = data.find(x => x.id === id);
 
-  if (i) {
-    i.stock = Math.max(0, i.stock + d);
-    await saveData();
-  }
+  const item = data.find(x => x.id === id);
+
+  if (!item) return;
+
+  item.stock = Math.max(0, item.stock + d);
+
+  await saveData();
 
   renderTable();
 };
 
 window.changeSoldToday = async (id, d) => {
-  const i = data.find(x => x.id === id);
 
-  if (i) {
-    i.soldToday = Math.max(0, i.soldToday + d);
-    await saveData();
-  }
+  const item = data.find(x => x.id === id);
 
-  renderTable();
-};
+  if (!item) return;
 
-window.updateStock = async (id, v) => {
-  const i = data.find(x => x.id === id);
+  item.soldToday = Math.max(0, item.soldToday + d);
 
-  if (i) {
-    i.stock = parseFloat(v) || 0;
-    await saveData();
-  }
+  await saveData();
 
   renderTable();
 };
 
-window.updateSoldToday = async (id, v) => {
-  const i = data.find(x => x.id === id);
+window.updateStock = async (id, value) => {
 
-  if (i) {
-    i.soldToday = parseFloat(v) || 0;
-    await saveData();
-  }
+  const item = data.find(x => x.id === id);
+
+  if (!item) return;
+
+  item.stock = parseInt(value) || 0;
+
+  await saveData();
+
+  renderTable();
+};
+
+window.updateSoldToday = async (id, value) => {
+
+  const item = data.find(x => x.id === id);
+
+  if (!item) return;
+
+  item.soldToday = parseInt(value) || 0;
+
+  await saveData();
 
   renderTable();
 };
 
 window.toggleEditMode = () => {
+
   editMode = !editMode;
+
   renderTable();
 };
 
@@ -343,24 +322,38 @@ window.refreshData = loadData;
 
 window.addNewItem = async () => {
 
-  const product = prompt("Product name?");
+  const product = prompt("Product name:");
+
   if (!product) return;
 
-  const sellPrice = parseFloat(prompt("Sell price?")) || 0;
+  const stock =
+    parseInt(prompt("Starting stock:")) || 0;
+
+  const sellPrice =
+    parseFloat(prompt("Sell price:")) || 0;
 
   const newItem = {
+
     id: Date.now(),
+
     product,
-    stock: 0,
+
+    stock,
+
     sellPrice,
+
     soldToday: 0,
+
     moneyMadeToday: 0
   };
 
   data.push(newItem);
 
   await saveData();
+
   renderTable();
+
+  alert("Item added.");
 };
 
 window.deleteItem = async (id) => {
@@ -368,26 +361,32 @@ window.deleteItem = async (id) => {
   data = data.filter(x => x.id !== id);
 
   await saveData();
+
   renderTable();
 };
 
 window.startAlgorithm = async () => {
 
   data.forEach(item => {
+
+    item.stock =
+      Math.max(0, item.stock - item.soldToday);
+
     item.moneyMadeToday =
-      (item.soldToday || 0) * (item.sellPrice || 0);
+      item.soldToday * item.sellPrice;
+
+    item.soldToday = 0;
   });
 
   await saveData();
 
-  alert("Calculation complete.");
-
   renderTable();
+
+  alert("Stock updated.");
 };
 
 loadData();
 
 </script>
-
 </body>
 </html>
