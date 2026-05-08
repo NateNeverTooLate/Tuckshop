@@ -2,7 +2,7 @@
   {
     "id": 1,
     "product": "Switch",
-    "stock": 8,
+    "stock": 16,
     "sellPrice": 15,
     "soldToday": 0,
     "moneyMadeToday": 75
