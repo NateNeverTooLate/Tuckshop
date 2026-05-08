@@ -4,10 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tuckshop Inventory</title>
+
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
-  body { font-family: system-ui, -apple-system, sans-serif; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+  }
 
   .number-input-group {
     display: flex;
@@ -19,6 +23,9 @@
   .number-input-group input {
     width: 64px;
     text-align: center;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 4px;
   }
 
   .number-btn {
@@ -26,16 +33,27 @@
     height: 30px;
     border-radius: 9999px;
     background: #f3f4f6;
+    transition: 0.15s;
   }
 
-  /* MOBILE CARD MODE */
+  .number-btn:hover {
+    background: #e5e7eb;
+  }
+
+  .number-btn:active {
+    transform: scale(0.95);
+  }
+
   @media (max-width: 640px) {
 
     table thead {
       display: none;
     }
 
-    table, tbody, tr, td {
+    table,
+    tbody,
+    tr,
+    td {
       display: block;
       width: 100%;
     }
@@ -66,8 +84,8 @@
     td:nth-child(3)::before { content: "Price"; }
     td:nth-child(4)::before { content: "Sold"; }
     td:nth-child(5)::before { content: "Money"; }
-
   }
+
 </style>
 </head>
 
@@ -76,41 +94,80 @@
 <div class="max-w-6xl mx-auto p-4">
 
   <div class="flex flex-col gap-3 mb-6">
-    <h1 class="text-2xl font-bold">Tuckshop Inventory</h1>
+
+    <h1 class="text-3xl font-bold">
+      Tuckshop Inventory
+    </h1>
 
     <div class="flex flex-wrap gap-2">
-      <a href="history.html" class="px-4 py-2 bg-blue-600 text-white rounded-xl">History</a>
-     <button
-  id="refreshBtn"
-  onclick="refreshData()"
-  class="px-4 py-2 bg-gray-600 text-white rounded-xl transition hover:bg-gray-700 active:scale-95"
->
-  Refresh
-</button>
-      <button onclick="toggleEditMode()" id="editBtn" class="px-4 py-2 bg-amber-600 text-white rounded-xl">Edit</button>
-      <button onclick="addNewItem()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl">+ Item</button>
-      <button onclick="startAlgorithm()" class="px-4 py-2 bg-green-600 text-white rounded-xl">Run</button>
+
+      <a
+        href="history.html"
+        class="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
+      >
+        History
+      </a>
+
+      <button
+        id="refreshBtn"
+        onclick="refreshData()"
+        class="px-4 py-2 bg-gray-600 text-white rounded-xl transition hover:bg-gray-700 active:scale-95"
+      >
+        Refresh
+      </button>
+
+      <button
+        onclick="toggleEditMode()"
+        id="editBtn"
+        class="px-4 py-2 bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition"
+      >
+        Edit
+      </button>
+
+      <button
+        onclick="addNewItem()"
+        class="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition"
+      >
+        + Item
+      </button>
+
+      <button
+        onclick="startAlgorithm()"
+        class="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition"
+      >
+        Run
+      </button>
+
     </div>
   </div>
 
-  <div class="bg-white rounded-2xl shadow p-2">
+  <div class="bg-white rounded-2xl shadow p-2 overflow-x-auto">
+
     <table class="w-full">
+
       <thead class="bg-gray-100">
+
         <tr>
           <th class="p-3 text-left">Product</th>
           <th class="p-3 text-right">Stock</th>
           <th class="p-3 text-right">Price</th>
           <th class="p-3 text-right">Sold</th>
           <th class="p-3 text-right">Money</th>
-          <th id="actionHeader"></th>
+          <th class="p-3"></th>
         </tr>
+
       </thead>
 
       <tbody id="tableBody"></tbody>
+
     </table>
+
   </div>
 
-  <div id="totalRow" class="mt-6 text-right text-xl font-bold"></div>
+  <div
+    id="totalRow"
+    class="mt-6 text-right text-2xl font-bold text-green-700"
+  ></div>
 
 </div>
 
@@ -125,7 +182,8 @@ async function apiGet(file) {
 
   try {
 
-    const response = await fetch(`${API_BASE}/get?file=${file}`);
+    const response =
+      await fetch(`${API_BASE}/get?file=${file}`);
 
     if (!response.ok) {
       throw new Error("Failed to load");
@@ -157,36 +215,41 @@ async function apiUpdate(file, content) {
     });
 
   } catch (err) {
+
     console.error(err);
   }
 }
 
 async function saveData() {
+
   await apiUpdate("tuck.json", data);
+}
+
+async function saveHistory(historyData) {
+
+  await apiUpdate("history.json", historyData);
 }
 
 async function loadData() {
 
-  const refreshBtn = document.getElementById("refreshBtn");
+  const refreshBtn =
+    document.getElementById("refreshBtn");
 
-  if (refreshBtn) {
-    refreshBtn.innerText = "Refreshing...";
-    refreshBtn.disabled = true;
-  }
+  refreshBtn.innerText = "Refreshing...";
+  refreshBtn.disabled = true;
 
   data = await apiGet("tuck.json");
 
   renderTable();
 
-  if (refreshBtn) {
-    refreshBtn.innerText = "Refresh";
-    refreshBtn.disabled = false;
-  }
+  refreshBtn.innerText = "Refresh";
+  refreshBtn.disabled = false;
 }
 
 function renderTable() {
 
-  const tbody = document.getElementById("tableBody");
+  const tbody =
+    document.getElementById("tableBody");
 
   tbody.innerHTML = "";
 
@@ -194,19 +257,27 @@ function renderTable() {
 
   data.forEach(item => {
 
-    item.moneyMadeToday =
-      (item.soldToday || 0) * (item.sellPrice || 0);
+    total += item.moneyMadeToday || 0;
 
-    total += item.moneyMadeToday;
-
-    const row = document.createElement("tr");
+    const row =
+      document.createElement("tr");
 
     row.innerHTML = `
-      <td>${item.product}</td>
+
+      <td class="font-medium">
+        ${item.product}
+      </td>
 
       <td>
+
         <div class="number-input-group">
-          <button onclick="changeStock(${item.id}, -1)" class="number-btn">-</button>
+
+          <button
+            onclick="changeStock(${item.id}, -1)"
+            class="number-btn"
+          >
+            -
+          </button>
 
           <input
             type="number"
@@ -214,15 +285,31 @@ function renderTable() {
             onchange="updateStock(${item.id}, this.value)"
           >
 
-          <button onclick="changeStock(${item.id}, 1)" class="number-btn">+</button>
+          <button
+            onclick="changeStock(${item.id}, 1)"
+            class="number-btn"
+          >
+            +
+          </button>
+
         </div>
+
       </td>
 
-      <td>R${item.sellPrice}</td>
+      <td class="text-right font-medium">
+        R${item.sellPrice.toFixed(2)}
+      </td>
 
       <td>
+
         <div class="number-input-group">
-          <button onclick="changeSoldToday(${item.id}, -1)" class="number-btn">-</button>
+
+          <button
+            onclick="changeSoldToday(${item.id}, -1)"
+            class="number-btn"
+          >
+            -
+          </button>
 
           <input
             type="number"
@@ -230,25 +317,36 @@ function renderTable() {
             onchange="updateSoldToday(${item.id}, this.value)"
           >
 
-          <button onclick="changeSoldToday(${item.id}, 1)" class="number-btn">+</button>
+          <button
+            onclick="changeSoldToday(${item.id}, 1)"
+            class="number-btn"
+          >
+            +
+          </button>
+
         </div>
+
       </td>
 
-      <td class="text-green-600">
-        R${item.moneyMadeToday.toFixed(2)}
+      <td class="text-green-600 font-semibold text-right">
+        R${(item.moneyMadeToday || 0).toFixed(2)}
       </td>
 
-      <td>
+      <td class="text-right">
+
         ${
           editMode
-          ? `<button
-                onclick="deleteItem(${item.id})"
-                class="text-red-600 font-bold"
-             >
-                X
-             </button>`
+          ? `
+            <button
+              onclick="deleteItem(${item.id})"
+              class="text-red-600 font-bold hover:text-red-800"
+            >
+              X
+            </button>
+          `
           : ""
         }
+
       </td>
     `;
 
@@ -256,57 +354,61 @@ function renderTable() {
   });
 
   document.getElementById("totalRow").innerHTML =
-    `Total: R${total.toFixed(2)}`;
+    `Total Revenue: R${total.toFixed(2)}`;
 }
 
 window.changeStock = async (id, d) => {
 
-  const item = data.find(x => x.id === id);
+  const item =
+    data.find(x => x.id === id);
 
   if (!item) return;
 
-  item.stock = Math.max(0, item.stock + d);
-
-  await saveData();
+  item.stock =
+    Math.max(0, item.stock + d);
 
   renderTable();
+
+  await saveData();
 };
 
-window.changeSoldToday = async (id, d) => {
+window.changeSoldToday = (id, d) => {
 
-  const item = data.find(x => x.id === id);
+  const item =
+    data.find(x => x.id === id);
 
   if (!item) return;
 
-  item.soldToday = Math.max(0, item.soldToday + d);
-
-  await saveData();
+  item.soldToday =
+    Math.max(0, item.soldToday + d);
 
   renderTable();
 };
 
 window.updateStock = async (id, value) => {
 
-  const item = data.find(x => x.id === id);
+  const item =
+    data.find(x => x.id === id);
 
   if (!item) return;
 
-  item.stock = parseInt(value) || 0;
-
-  await saveData();
+  item.stock =
+    parseInt(value) || 0;
 
   renderTable();
+
+  await saveData();
 };
 
-window.updateSoldToday = async (id, value) => {
+window.updateSoldToday = (id, value) => {
 
-  const item = data.find(x => x.id === id);
+  const item =
+    data.find(x => x.id === id);
 
   if (!item) return;
 
-  item.soldToday = parseInt(value) || 0;
-
-  await saveData();
+  item.soldToday =
+    parseInt(value) || 0;
 
   renderTable();
 };
@@ -322,7 +424,8 @@ window.refreshData = loadData;
 
 window.addNewItem = async () => {
 
-  const product = prompt("Product name:");
+  const product =
+    prompt("Product name:");
 
   if (!product) return;
 
@@ -358,7 +461,13 @@ window.addNewItem = async () => {
 
 window.deleteItem = async (id) => {
 
-  data = data.filter(x => x.id !== id);
+  const confirmed =
+    confirm("Delete this item?");
+
+  if (!confirmed) return;
+
+  data =
+    data.filter(x => x.id !== id);
 
   await saveData();
 
@@ -367,26 +476,78 @@ window.deleteItem = async (id) => {
 
 window.startAlgorithm = async () => {
 
+  const runBtn =
+    document.querySelector(
+      'button[onclick="startAlgorithm()"]'
+    );
+
+  runBtn.innerText = "Processing...";
+  runBtn.disabled = true;
+
+  let history =
+    await apiGet("history.json");
+
+  if (!Array.isArray(history)) {
+    history = [];
+  }
+
+  const session = {
+
+    date: new Date().toLocaleString(),
+
+    items: [],
+
+    total: 0
+  };
+
   data.forEach(item => {
 
-    item.stock =
-      Math.max(0, item.stock - item.soldToday);
+    const sold =
+      item.soldToday || 0;
 
-    item.moneyMadeToday =
-      item.soldToday * item.sellPrice;
+    const money =
+      sold * item.sellPrice;
+
+    if (sold > 0) {
+
+      item.stock =
+        Math.max(0, item.stock - sold);
+
+      item.moneyMadeToday =
+        (item.moneyMadeToday || 0) + money;
+
+      session.items.push({
+
+        product: item.product,
+
+        sold,
+
+        money
+      });
+
+      session.total += money;
+    }
 
     item.soldToday = 0;
   });
 
+  history.push(session);
+
   await saveData();
+
+  await saveHistory(history);
 
   renderTable();
 
-  alert("Stock updated.");
+  runBtn.innerText = "Run";
+  runBtn.disabled = false;
+
+  alert("Sales processed successfully.");
 };
 
 loadData();
 
 </script>
+
 </body>
 </html>
