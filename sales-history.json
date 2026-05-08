@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "date": "5/8/2026, 5:17:55 PM",
+    "items": [
+      {
+        "product": "Switch",
+        "sold": 2,
+        "money": 30
+      }
+    ],
+    "total": 30
+  }
+]
