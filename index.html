@@ -1,113 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tuckshop Inventory</title>
-<script src="https://cdn.tailwindcss.com"></script>
-
-<style>
-  body { font-family: system-ui, -apple-system, sans-serif; }
-
-  .number-input-group {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    justify-content: flex-end;
-  }
-
-  .number-input-group input {
-    width: 64px;
-    text-align: center;
-  }
-
-  .number-btn {
-    width: 30px;
-    height: 30px;
-    border-radius: 9999px;
-    background: #f3f4f6;
-  }
-
-  /* MOBILE CARD MODE */
-  @media (max-width: 640px) {
-
-    table thead {
-      display: none;
-    }
-
-    table, tbody, tr, td {
-      display: block;
-      width: 100%;
-    }
-
-    tr {
-      background: white;
-      margin-bottom: 12px;
-      border-radius: 16px;
-      padding: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    }
-
-    td {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 0;
-      font-size: 14px;
-    }
-
-    td::before {
-      font-weight: 600;
-      color: #6b7280;
-    }
-
-    td:nth-child(1)::before { content: "Product"; }
-    td:nth-child(2)::before { content: "Stock"; }
-    td:nth-child(3)::before { content: "Price"; }
-    td:nth-child(4)::before { content: "Sold"; }
-    td:nth-child(5)::before { content: "Money"; }
-
-  }
-</style>
-</head>
-
-<body class="bg-gray-50 min-h-screen">
-
-<div class="max-w-6xl mx-auto p-4">
-
-  <div class="flex flex-col gap-3 mb-6">
-    <h1 class="text-2xl font-bold">Tuckshop Inventory</h1>
-
-    <div class="flex flex-wrap gap-2">
-      <a href="history.html" class="px-4 py-2 bg-blue-600 text-white rounded-xl">History</a>
-      <button onclick="refreshData()" class="px-4 py-2 bg-gray-600 text-white rounded-xl">Refresh</button>
-      <button onclick="toggleEditMode()" id="editBtn" class="px-4 py-2 bg-amber-600 text-white rounded-xl">Edit</button>
-      <button onclick="addNewItem()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl">+ Item</button>
-      <button onclick="startAlgorithm()" class="px-4 py-2 bg-green-600 text-white rounded-xl">Run</button>
-    </div>
-  </div>
-
-  <div class="bg-white rounded-2xl shadow p-2">
-    <table class="w-full">
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="p-3 text-left">Product</th>
-          <th class="p-3 text-right">Stock</th>
-          <th class="p-3 text-right">Price</th>
-          <th class="p-3 text-right">Sold</th>
-          <th class="p-3 text-right">Money</th>
-          <th id="actionHeader"></th>
-        </tr>
-      </thead>
-
-      <tbody id="tableBody"></tbody>
-    </table>
-  </div>
-
-  <div id="totalRow" class="mt-6 text-right text-xl font-bold"></div>
-
-</div>
-
 <script>
 
 const API_BASE = "/api";
@@ -127,6 +17,10 @@ async function apiUpdate(file, content) {
   });
 }
 
+async function saveData() {
+  await apiUpdate("tuck.json", data);
+}
+
 async function loadData() {
   data = await apiGet("tuck.json");
   renderTable();
@@ -139,6 +33,8 @@ function renderTable() {
   let total = 0;
 
   data.forEach(item => {
+
+    item.moneyMadeToday = (item.soldToday || 0) * (item.sellPrice || 0);
 
     total += item.moneyMadeToday || 0;
 
@@ -167,7 +63,12 @@ function renderTable() {
 
       <td class="text-green-600">R${(item.moneyMadeToday || 0).toFixed(2)}</td>
 
-      <td>${editMode ? `<button onclick="deleteItem(${item.id})">X</button>` : ""}</td>
+      <td>
+        ${editMode
+          ? `<button onclick="deleteItem(${item.id})" class="text-red-600 font-bold">X</button>`
+          : ""
+        }
+      </td>
     `;
 
     tbody.appendChild(row);
@@ -177,27 +78,48 @@ function renderTable() {
     `Total: R${total.toFixed(2)}`;
 }
 
-// functions unchanged
-window.changeStock = (id, d) => {
+window.changeStock = async (id, d) => {
   const i = data.find(x => x.id === id);
-  if (i) i.stock = Math.max(0, i.stock + d);
+
+  if (i) {
+    i.stock = Math.max(0, i.stock + d);
+    await saveData();
+  }
+
   renderTable();
 };
 
-window.changeSoldToday = (id, d) => {
+window.changeSoldToday = async (id, d) => {
   const i = data.find(x => x.id === id);
-  if (i) i.soldToday = Math.max(0, i.soldToday + d);
+
+  if (i) {
+    i.soldToday = Math.max(0, i.soldToday + d);
+    await saveData();
+  }
+
   renderTable();
 };
 
-window.updateStock = (id, v) => {
+window.updateStock = async (id, v) => {
   const i = data.find(x => x.id === id);
-  if (i) i.stock = parseFloat(v) || 0;
+
+  if (i) {
+    i.stock = parseFloat(v) || 0;
+    await saveData();
+  }
+
+  renderTable();
 };
 
-window.updateSoldToday = (id, v) => {
+window.updateSoldToday = async (id, v) => {
   const i = data.find(x => x.id === id);
-  if (i) i.soldToday = parseFloat(v) || 0;
+
+  if (i) {
+    i.soldToday = parseFloat(v) || 0;
+    await saveData();
+  }
+
+  renderTable();
 };
 
 window.toggleEditMode = () => {
@@ -207,9 +129,50 @@ window.toggleEditMode = () => {
 
 window.refreshData = loadData;
 
+window.addNewItem = async () => {
+
+  const product = prompt("Product name?");
+  if (!product) return;
+
+  const sellPrice = parseFloat(prompt("Sell price?")) || 0;
+
+  const newItem = {
+    id: Date.now(),
+    product,
+    stock: 0,
+    sellPrice,
+    soldToday: 0,
+    moneyMadeToday: 0
+  };
+
+  data.push(newItem);
+
+  await saveData();
+  renderTable();
+};
+
+window.deleteItem = async (id) => {
+
+  data = data.filter(x => x.id !== id);
+
+  await saveData();
+  renderTable();
+};
+
+window.startAlgorithm = async () => {
+
+  data.forEach(item => {
+    item.moneyMadeToday =
+      (item.soldToday || 0) * (item.sellPrice || 0);
+  });
+
+  await saveData();
+
+  alert("Calculation complete.");
+
+  renderTable();
+};
+
 loadData();
 
 </script>
-
-</body>
-</html>
