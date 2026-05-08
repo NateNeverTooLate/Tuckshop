@@ -1,4 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tuckshop Inventory</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  body { font-family: system-ui, -apple-system, sans-serif; }
+
+  .number-input-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+
+  .number-input-group input {
+    width: 64px;
+    text-align: center;
+  }
+
+  .number-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 9999px;
+    background: #f3f4f6;
+  }
+
+  /* MOBILE CARD MODE */
+  @media (max-width: 640px) {
+
+    table thead {
+      display: none;
+    }
+
+    table, tbody, tr, td {
+      display: block;
+      width: 100%;
+    }
+
+    tr {
+      background: white;
+      margin-bottom: 12px;
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    td {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      font-size: 14px;
+    }
+
+    td::before {
+      font-weight: 600;
+      color: #6b7280;
+    }
+
+    td:nth-child(1)::before { content: "Product"; }
+    td:nth-child(2)::before { content: "Stock"; }
+    td:nth-child(3)::before { content: "Price"; }
+    td:nth-child(4)::before { content: "Sold"; }
+    td:nth-child(5)::before { content: "Money"; }
+
+  }
+</style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+
+<div class="max-w-6xl mx-auto p-4">
+
+  <div class="flex flex-col gap-3 mb-6">
+    <h1 class="text-2xl font-bold">Tuckshop Inventory</h1>
+
+    <div class="flex flex-wrap gap-2">
+      <a href="history.html" class="px-4 py-2 bg-blue-600 text-white rounded-xl">History</a>
+      <button onclick="refreshData()" class="px-4 py-2 bg-gray-600 text-white rounded-xl">Refresh</button>
+      <button onclick="toggleEditMode()" id="editBtn" class="px-4 py-2 bg-amber-600 text-white rounded-xl">Edit</button>
+      <button onclick="addNewItem()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl">+ Item</button>
+      <button onclick="startAlgorithm()" class="px-4 py-2 bg-green-600 text-white rounded-xl">Run</button>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow p-2">
+    <table class="w-full">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="p-3 text-left">Product</th>
+          <th class="p-3 text-right">Stock</th>
+          <th class="p-3 text-right">Price</th>
+          <th class="p-3 text-right">Sold</th>
+          <th class="p-3 text-right">Money</th>
+          <th id="actionHeader"></th>
+        </tr>
+      </thead>
+
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div id="totalRow" class="mt-6 text-right text-xl font-bold"></div>
+
+</div>
+
 <script>
+
+const API_BASE = "/api";
+
+let data = [];
+let editMode = false;
+
+async function apiGet(file) {
+  return fetch(`${API_BASE}/get?file=${file}`).then(r => r.json());
+}
+
+async function apiUpdate(file, content) {
+  return fetch(`${API_BASE}/update`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ file, content })
+  });
+}
+
+async function loadData() {
+  data = await apiGet("tuck.json");
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = "";
+
+  let total = 0;
+
+  data.forEach(item => {
+
+    total += item.moneyMadeToday || 0;
+
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>${item.product}</td>
+
+      <td>
+        <div class="number-input-group">
+          <button onclick="changeStock(${item.id}, -1)" class="number-btn">-</button>
+          <input value="${item.stock}" onchange="updateStock(${item.id}, this.value)">
+          <button onclick="changeStock(${item.id}, 1)" class="number-btn">+</button>
+        </div>
+      </td>
+
+      <td>R${item.sellPrice}</td>
+
+      <td>
+        <div class="number-input-group">
+          <button onclick="changeSoldToday(${item.id}, -1)" class="number-btn">-</button>
+          <input value="${item.soldToday}" onchange="updateSoldToday(${item.id}, this.value)">
+          <button onclick="changeSoldToday(${item.id}, 1)" class="number-btn">+</button>
+        </div>
+      </td>
+
+      <td class="text-green-600">R${(item.moneyMadeToday || 0).toFixed(2)}</td>
+
+      <td>${editMode ? `<button onclick="deleteItem(${item.id})">X</button>` : ""}</td>
+    `;
+
+    tbody.appendChild(row);
+  });
+
+  document.getElementById("totalRow").innerHTML =
+    `Total: R${total.toFixed(2)}`;
+}
+
+// functions unchanged
+window.changeStock = (id, d) => {
+  const i = data.find(x => x.id === id);
+  if (i) i.stock = Math.max(0, i.stock + d);
+  renderTable();
+};
+
+window.changeSoldToday = (id, d) => {
+  const i = data.find(x => x.id === id);
+  if (i) i.soldToday = Math.max(0, i.soldToday + d);
+  renderTable();
+};
+
+window.updateStock = (id, v) => {
+  const i = data.find(x => x.id === id);
+  if (i) i.stock = parseFloat(v) || 0;
+};
+
+window.updateSoldToday = (id, v) => {
+  const i = data.find(x => x.id === id);
+  if (i) i.soldToday = parseFloat(v) || 0;
+};
+
+window.toggleEditMode = () => {
+  editMode = !editMode;
+  renderTable();
+};
+
+window.refreshData = loadData;
+
+loadData();
+
+</script>
+  <script>
 
 const API_BASE = "/api";
 
@@ -176,3 +388,8 @@ window.startAlgorithm = async () => {
 loadData();
 
 </script>
+
+</body>
+</html>
+
+My buttons arent working, such as run etc.
