@@ -485,7 +485,7 @@ window.startAlgorithm = async () => {
   runBtn.disabled = true;
 
   let history =
-    await apiGet("history.json");
+    await apiGet("sales-history.json");
 
   if (!Array.isArray(history)) {
     history = [];
