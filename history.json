@@ -1,7 +1,13 @@
 [
   {
-    "date": "5/8/2026, 5:13:50 PM",
-    "items": [],
-    "total": 0
+    "date": "5/8/2026, 5:14:11 PM",
+    "items": [
+      {
+        "product": "Switch",
+        "sold": 1,
+        "money": 15
+      }
+    ],
+    "total": 15
   }
 ]
