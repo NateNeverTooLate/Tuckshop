@@ -94,5 +94,12 @@
     "sellPrice": 2,
     "soldToday": 0,
     "moneyMadeToday": 0
+  },
+  {
+    "id": 1778253943922,
+    "product": "Monster",
+    "stock": 0,
+    "sellPrice": 20,
+    "soldToday": 0
   }
 ]
